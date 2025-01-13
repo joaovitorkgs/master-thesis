@@ -8,10 +8,11 @@ pacman::p_load (readr,        # Ler arquivos .csv
                 scales,       # Uso de porcentages
                 stringr,      # Manipulacao de strings
                 lubridate, 
-                basedosdados,
+                basedosdados, # BigQuery from public data on Brazil
                 geobr,
-                sf) # BigQuery from public data on Brazil
-
+                sf,
+                viridis,
+                RColorBrewer)
 
 
 fleet_df_nov24 <- read_excel("1_raw_data/2_vehicle_fleet/D_Frota_por_UF_Municipio_COMBUSTIVEL_Novembro_2024.xlsx")
@@ -58,7 +59,7 @@ state_df$UF <- state_df$name_state %>%
 
 electric_vehicles_per_state <- electric_vehicles_per_state %>% 
   left_join(state_df, by = "UF") %>% 
-  select(code_state, abbrev_state, name_state, code_region, name_region, geom, total_electric_vehicles, total_vehicles, percentage) %>% 
+  select(code_state, abbrev_state, name_state, code_region, name_region, geom, total_electric_vehicles, total_vehicles, percentage) 
 
 no_axis <- theme(axis.title=element_blank(),
                  axis.text=element_blank(),
@@ -68,12 +69,39 @@ no_axis <- theme(axis.title=element_blank(),
 electric_vehicles_per_state$name_state <- tolower(electric_vehicles_per_state$name_state)
 
 
+
+
 ggplot() +
-  geom_sf(data=electric_vehicles_per_state, aes(fill=percentage), color= NA, size=.15) +
+  geom_sf(data=electric_vehicles_per_state, aes(fill=total_electric_vehicles), color= NA, size=.15) +
   labs(subtitle="% of Electric Vehicles per State ", size=8) +
   scale_fill_distiller(palette = "Blues", name="Percentage", limits = c(65,80)) +
   theme_minimal() +
   no_axis
 
 
-?stat_sf()
+stat_sf()
+
+
+
+
+electric_vehicles_per_state <- st_as_sf(electric_vehicles_per_state)
+
+electric_vehicles_per_state$percentage_num <- as.numeric(sub("%", "", electric_vehicles_per_state$percentage))
+
+
+
+ggplot() +
+  geom_sf(data=electric_vehicles_per_state, aes(fill=percentage_num), color=NA, size=.15) +
+  labs(subtitle="Percentage of Electric Vehicles per State", size=8) +
+  scale_fill_distiller(palette="YlGn", name="Percentage") + 
+  theme_minimal() +
+  no_axis
+
+
+ggplot() +
+  geom_sf(data=electric_vehicles_per_state, aes(fill=total_electric_vehicles), color=NA, size=.15) +
+  labs(subtitle ="Total Number of Electric Vehicles per State", size=8) +
+  scale_fill_distiller(palette="YlGn", name="Number of Electric Vehicles") + 
+  theme_minimal() +
+  no_axis
+

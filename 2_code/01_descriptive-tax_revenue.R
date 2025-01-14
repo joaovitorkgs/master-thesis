@@ -10,4 +10,6 @@ pacman::p_load (readr,     # Ler arquivos .csv
                 lubridate) # Uso de dados
 
 
-D_Frota_por_UF_Municipio_COMBUSTIVEL_Novembro_2024 <- read_excel("1_raw_data/2_vehicle_fleet/D_Frota_por_UF_Municipio_COMBUSTIVEL_Novembro_2024.xlsx")
+
+
+ 

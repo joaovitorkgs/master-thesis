@@ -1,17 +1,21 @@
 # Packages and raw dataframes -- -----------------------------------------------
 
-pacman::p_load (readr,        # Ler arquivos .csv
-                readxl,       # Ler arquivos .xlsx
-                dplyr,        # Manipulacao de dados
-                tidyr,        # Manipulacao de dados
-                ggplot2,      # Criacao de gráficos
-                scales,       # Uso de porcentages
-                stringr,      # Manipulacao de strings
-                lubridate, 
-                basedosdados) # BigQuery from public data on Brazil
+pacman::p_load(readr,        # Read CSV files
+               readxl,       # Read Excel files
+               dplyr,        # Data manipulation
+               tidyr,        # Data tidying and reshaping
+               ggplot2,      # Create data visualizations
+               scales,       # Format axes and legends (percentages, currencies)
+               stringr,      # String manipulation
+               lubridate,    # Date and time manipulation
+               basedosdados, # Access to Brazilian public data via BigQuery
+               geobr,        # Brazilian geographic data
+               sf,           # Handle spatial/geographic data
+               viridis,      # Color palettes for data visualization
+               RColorBrewer) # Additional color palettes for plotting
 
 
-# Electricity consumption 
+# Electricity consumption  -----------------------------------------------------
 
 set_billing_id("central-stream-297218")
 
@@ -48,3 +52,22 @@ df %>%
 # Estimate electricity tax income
 
 
+
+
+
+# Install and load required packages
+install.packages("readxl")
+install.packages("httr")
+library(readxl)
+library(httr)
+
+# Specify the URL
+url <- "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-estatisticos/de/vdpb/vecf/2023-vendas-etanol.xlsx"
+
+# Download and save as a temporary file
+temp_file <- tempfile(fileext = ".xlsx")
+GET(url, write_disk(temp_file, overwrite = TRUE))
+
+# Read the Excel file starting from a specific row (e.g., row 5)
+data <- read_excel(temp_file, skip = 4)  # Skip 4 rows to start reading from row 5
+head(data)  # Display first few rows

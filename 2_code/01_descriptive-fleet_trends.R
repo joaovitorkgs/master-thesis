@@ -250,7 +250,7 @@ yearly_results_agg_long <- yearly_results_aggregate %>%
 
 # Electric vehicles (aggregate)
 
-ggplot(yearly_results_aggregate, aes(x = as.integer(year), y = Electric)) +
+plot_trend_ev_agg <- ggplot(yearly_results_aggregate, aes(x = as.integer(year), y = Electric)) +
   geom_line(color = "#69b3a2", linewidth = 2) +
   geom_point(size = 3, color = "#69b3a2") +
   theme_bw()+
@@ -261,9 +261,14 @@ ggplot(yearly_results_aggregate, aes(x = as.integer(year), y = Electric)) +
     y = "Number of Registered Vehicles",
     title = "Evolution of Electric Vehicles in Brazil")
 
+plot_trend_ev_agg
+
+ggsave("./4_plots/plot_trend_ev_agg.png",
+       plot = plot_trend_ev_agg)
+
 # Hybrid vehicles (aggregate)
 
-ggplot(yearly_results_aggregate, aes(x = as.integer(year), y = Hybrid)) +
+plot_trend_hyb_agg <- ggplot(yearly_results_aggregate, aes(x = as.integer(year), y = Hybrid)) +
   geom_line(color = "#69b3a2", linewidth = 2) +
   geom_point(size = 3, color = "#69b3a2") +
   theme_bw()+
@@ -274,9 +279,15 @@ ggplot(yearly_results_aggregate, aes(x = as.integer(year), y = Hybrid)) +
     y = "Number of Registered Vehicles",
     title = "Evolution of Hybrid Vehicles in Brazil")
 
+plot_trend_hyb_agg
+
+ggsave("./4_plots/plot_trend_hyb_agg.png",
+       plot = plot_trend_hyb_agg)
+
+
 # Other vehicles (aggregate)
 
-ggplot(yearly_results_aggregate, aes(x = as.integer(year), y = Other)) +
+plot_trend_other_agg <- ggplot(yearly_results_aggregate, aes(x = as.integer(year), y = Other)) +
   geom_line(color = "#69b3a2", linewidth = 2) +
   geom_point(size = 3, color = "#69b3a2") +
   theme_bw()+
@@ -287,9 +298,14 @@ ggplot(yearly_results_aggregate, aes(x = as.integer(year), y = Other)) +
     y = "Number of Registered Vehicles",
     title = "Evolution of Non-Electric Vehicles in Brazil")
 
+plot_trend_other_agg
+
+ggsave("./4_plots/plot_trend_other_agg.png",
+       plot   = plot_trend_other_agg)
+
 # All vehicles (aggregate, compared across categories)
 
-ggplot(yearly_results_agg_long, aes(x = as.integer(year), y = log(Count))) +
+plot_trend_compared_cat <- ggplot(yearly_results_agg_long, aes(x = as.integer(year), y = log(Count))) +
   geom_line(color = "#69b3a2", linewidth = 2) +
   geom_point(size = 3, color = "#69b3a2") +
   theme_bw()+
@@ -298,15 +314,23 @@ ggplot(yearly_results_agg_long, aes(x = as.integer(year), y = log(Count))) +
   labs(
     x = "Year",
     y = "Number of Registered Vehicles (log scale)",
-    title = "Evolution of Registered Vehicles in Brazil per Combustible Type") +
+    title = "Evolution of Registered Vehicles in Brazil per Combustible Type",
+    subtitle = "Source: National Traffic Secretariat, 2024") +
   facet_wrap(~ Category, nrow = 1)
 
-#plot_zoom_png?width=1611&height=565
+plot_trend_compared_cat
+
+ggsave("./4_plots/plot_trend_compared_cat.png",
+        plot   = plot_trend_compared_cat,
+        width  = 14,
+        height = 4.5,
+        units = "in")
+
 
 
 # Electric vehicles (compared across states)
 
-ggplot(yearly_results_state, aes(x = as.integer(year), y = log(Electric))) +
+plot_trend_compared_states <- ggplot(yearly_results_state, aes(x = as.integer(year), y = log(Electric))) +
   geom_line(color = "#69b3a2", linewidth = 2) +
   geom_point(size = 3, color = "#69b3a2") +
   theme_bw()+
@@ -318,7 +342,13 @@ ggplot(yearly_results_state, aes(x = as.integer(year), y = log(Electric))) +
     title = "Evolution of Electric Vehicles in Brazil")+
   facet_wrap(~ name_state, nrow = 5)
 
+plot_trend_compared_states
 
+ggsave("./4_plots/plot_trend_compared_states.png",
+       plot = plot_trend_compared_states,
+       width  = 15,
+       height = 15,
+       units = "in")
 
 
 

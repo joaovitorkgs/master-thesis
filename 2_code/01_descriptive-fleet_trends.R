@@ -50,94 +50,9 @@ state_df <- geobr::read_state(year = 2020,showProgress = FALSE)
 source("./2_code/01_descriptive-demographics.R")
 
 
-# 3. Manipulating data to generate plots and tables ----------------------------
+# 3. Overview of the vehicle fleet per combustible type ------------------------
 
 # 3.1 Vehicle fleet (total/electric) -------------------------------------------
-
-
-# Aggregate municipal data in state level
-fleet_state_24 <- fleet_df_nov24 %>% 
-  group_by(UF,`Combustível Veículo`) %>%  # Grouping by kind of fuel used
-  summarize(Total = sum(`Qtd. Veículos`))
-
-# Data frame of total vehicles per state
-vehicles_per_state_24 <- fleet_state_24 %>%
-  group_by(UF) %>%
-  summarise(total_vehicles = sum(Total))
-
-# Filter electric vehicles and creating a new variable for % of electric or hybrid vehicles
-electric_vehicles_per_state_24 <- fleet_state_24 %>%
-  filter(grepl("^ELETRICO", `Combustível Veículo`)) %>%
-  group_by(UF) %>%
-  summarise(total_electric_vehicles = sum(Total)) %>% 
-  left_join(vehicles_per_state, by = "UF") %>% 
-  mutate(percentage = vehicles_per_state_24::percent(total_electric_vehicles/total_vehicles, accuracy = 0.01)) %>% 
-  filter(UF != "Sem Informação")
-
-# Create a string to use as common key to join the data frames
-state_df$UF <- state_df$name_state %>%
-  stringi::stri_trans_general("Latin-ASCII") %>%
-  toupper()
-
-# Join electric vehicle df with geographic info on the states
-electric_vehicles_per_state <- electric_vehicles_per_state %>% 
-  left_join(state_df, by = "UF") %>% 
-  select(code_state, abbrev_state, name_state, code_region, name_region, geom, total_electric_vehicles, total_vehicles, percentage) 
-
-# Update variable name
-electric_vehicles_per_state$name_state <- tolower(electric_vehicles_per_state$name_state)
-
-
-
-
-# Aggregate municipal data in state level
-fleet_state_21 <- fleet_df_nov21 %>% 
-  group_by(UF,`Combustível Veículo`) %>%  # Grouping by kind of fuel used
-  summarize(Total = sum(`Qtd. Veículos`))
-
-# Data frame of total vehicles per state
-vehicles_per_state_21 <- fleet_state_21 %>%
-  group_by(UF) %>%
-  summarise(total_vehicles = sum(Total))
-
-# Filter electric vehicles and creating a new variable for % of electric or hybrid vehicles
-electric_vehicles_per_state_21 <- fleet_state_21 %>%
-  filter(grepl("^ELETRICO", `Combustível Veículo`)) %>%
-  group_by(UF) %>%
-  summarise(total_electric_vehicles = sum(Total)) %>% 
-  left_join(vehicles_per_state_21, by = "UF") %>% 
-  mutate(percentage = total_electric_vehicles/total_vehicles, accuracy = 0.01) %>% 
-  filter(UF != "Sem Informação")
-
-# Create a string to use as common key to join the data frames
-state_df$UF <- state_df$name_state %>%
-  stringi::stri_trans_general("Latin-ASCII") %>%
-  toupper()
-
-# Join electric vehicle df with geographic info on the states
-electric_vehicles_per_state <- electric_vehicles_per_state %>% 
-  left_join(state_df, by = "UF") %>% 
-  select(code_state, abbrev_state, name_state, code_region, name_region, geom, total_electric_vehicles, total_vehicles, percentage) 
-
-# Update variable name
-electric_vehicles_per_state$name_state <- tolower(electric_vehicles_per_state$name_state)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 file_paths <- c(
@@ -219,6 +134,259 @@ yearly_results <- fleet_analysis_results %>%
             total_vehicles = sum(total_vehicles)) %>% 
   mutate(share_e_vehicles = total_e_vehicles/total_vehicles)
 
+
+
+# 3.0 Exploring categories per year  -------------------------------------------
+
+## This chunk of code was used only to explore individual data sets, as I was having 
+## issues with distorted values in certain years and categories, and I decided to look
+## into what the issue could be by exploring the data frames a bit more in depth.
+
+categorias13 <- fleet_df_nov13 %>% 
+  group_by(`Combustível Veículo`) %>% 
+  summarize(total = sum(`Qtd. Veículos`)) %>% 
+  mutate(year = 2013)
+
+categorias14 <- fleet_df_nov14 %>% 
+  group_by(`Combustível Veículo`) %>% 
+  summarize(total = sum(`Qtd. Veículos`)) %>% 
+  mutate(year = 2014)
+
+categorias15 <- fleet_df_nov15 %>% 
+  group_by(`Combustível Veículo`) %>% 
+  summarize(total = sum(`Qtd. Veículos`)) %>% 
+  mutate(year = 2015)
+
+categorias16 <- fleet_df_nov16 %>% 
+  group_by(`Combustível Veículo`) %>% 
+  summarize(total = sum(`Qtd. Veículos`)) %>% 
+  mutate(year = 2016)
+
+categorias17 <- fleet_df_nov17 %>% 
+  group_by(`Combustível Veículo`) %>% 
+  summarize(total = sum(`Qtd. Veículos`)) %>% 
+  mutate(year = 2017)
+
+categorias18 <- fleet_df_nov18 %>% 
+  group_by(`Combustível Veículo`) %>% 
+  summarize(total = sum(`Qtd. Veículos`)) %>% 
+  mutate(year = 2018)
+
+categorias19 <- fleet_df_nov19 %>% 
+  group_by(`Combustível Veículo`) %>% 
+  summarize(total = sum(`Qtd. Veículos`)) %>% 
+  mutate(year = 2019)
+
+categorias20 <- fleet_df_nov20 %>% 
+  group_by(`Combustível Veículo`) %>% 
+  summarize(total = sum(`Qtd. Veículos`)) %>% 
+  mutate(year = 2020)
+
+categorias21 <- fleet_df_nov21 %>% 
+  group_by(`Combustível Veículo`) %>% 
+  summarize(total = sum(`Qtd. Veículos`)) %>% 
+  mutate(year = 2021)
+
+categorias22 <- fleet_df_nov22 %>% 
+  group_by(`Combustível Veículo`) %>% 
+  summarize(total = sum(`Qtd. Veículos`)) %>% 
+  mutate(year = 2022)
+
+categorias23 <- fleet_df_nov23 %>% 
+  group_by(`Combustível Veículo`) %>% 
+  summarize(total = sum(`Qtd. Veículos`)) %>% 
+  mutate(year = 2023)
+
+categorias24 <- fleet_df_nov24 %>% 
+  group_by(`Combustível Veículo`) %>% 
+  summarize(total = sum(`Qtd. Veículos`)) %>% 
+  mutate(year = 2024)
+
+all_categories <- bind_rows(categorias13,
+                            categorias14,
+                            categorias15,
+                            categorias16,
+                            categorias17,
+                            categorias18,
+                            categorias19,
+                            categorias20,
+                            categorias21,
+                            categorias22,
+                            categorias23,
+                            categorias24)
+
+
+
+
+create_fleet_analysis_function <- function(file_paths, state_df) {
+  
+  # Function to process each file
+  process_file <- function(file_path) {
+    # Extract year from filename (first 4 characters)
+    year <- as.numeric(substr(basename(file_path), 1, 4))
+    
+    fleet_df <- read_excel(file_path)
+    
+    # Aggregate municipal data at state level
+    fleet_state <- fleet_df %>% 
+      group_by(UF, `Combustível Veículo`) %>%
+      summarize(Total = sum(`Qtd. Veículos`), .groups = 'drop')
+    
+    # Data frame of total vehicles per state
+    vehicles_per_state <- fleet_state %>%
+      group_by(UF) %>%
+      summarise(total_vehicles = sum(Total), .groups = 'drop')
+    
+    # Categorize vehicles and calculate totals
+    vehicles_by_type <- fleet_state %>%
+      mutate(vehicle_type = case_when(
+        `Combustível Veículo` %in% c("ELETRICO", "ELETRICO/FONTE INTERNA") ~ "Electric",
+        grepl("/ELETRICO", `Combustível Veículo`) | `Combustível Veículo` == "ELETRICO/FONTE EXTERNA" ~ "Hybrid",
+        TRUE ~ "Other"
+      )) %>%
+      group_by(UF, vehicle_type) %>%
+      summarise(total = sum(Total), .groups = 'drop') %>%
+      pivot_wider(
+        names_from = vehicle_type,
+        values_from = total,
+        values_fill = 0
+      ) %>%
+      left_join(vehicles_per_state, by = "UF") %>%
+      mutate(
+        # Adjust 2021 values
+        Electric = if(year == 2021) Electric/10 else Electric,
+        Hybrid = if(year == 2021) Hybrid/10 else Hybrid,
+        Other = if(year == 2021) Other/10 else Other,
+        total_vehicles = if(year == 2021) total_vehicles/10 else total_vehicles,
+        # Calculate percentages
+        electric_percentage = scales::percent(Electric/total_vehicles, accuracy = 0.01),
+        hybrid_percentage = scales::percent(Hybrid/total_vehicles, accuracy = 0.01),
+        year = year
+      ) %>%
+      filter(UF != "Sem Informação")
+    
+    return(vehicles_by_type)
+  }
+  
+  # Process all files and combine results
+  all_results <- lapply(file_paths, process_file)
+  combined_results <- bind_rows(all_results)
+  
+  # Prepare state data frame
+  state_df$UF <- state_df$name_state %>%
+    stringi::stri_trans_general("Latin-ASCII") %>%
+    toupper()
+  
+  # Final join with geographic information
+  final_result <- combined_results %>% 
+    left_join(state_df, by = "UF") %>% 
+    select(year, code_state, abbrev_state, name_state, code_region, 
+           name_region, geom, Electric, Hybrid, Other,
+           total_vehicles, electric_percentage, hybrid_percentage)
+  
+  # Store the result in the global environment
+  assign("fleet_analysis_results", final_result, envir = .GlobalEnv)
+  
+  return(final_result)
+}
+
+create_fleet_analysis_function(file_paths, state_df)
+
+
+yearly_results_aggregate <- fleet_analysis_results %>% 
+  drop_na() %>% 
+  group_by(year) %>% 
+  summarize(Electric = sum(Electric),
+            Hybrid   = sum(Hybrid),
+            Other    = sum(Other),
+            Total   = sum(total_vehicles)) %>% 
+  mutate(Share_electric = Electric/Total,
+         Share_hybrid   = Hybrid/Total)
+
+yearly_results_state <- fleet_analysis_results %>% 
+  drop_na() %>% 
+  group_by(year, name_state) %>% 
+  summarize(Electric = sum(Electric),
+            Hybrid   = sum(Hybrid),
+            Other    = sum(Other),
+            Total   = sum(total_vehicles)) %>% 
+  mutate(Share_electric = Electric/Total,
+         Share_hybrid   = Hybrid/Total) 
+
+
+
+ggplot(yearly_results_aggregate, aes(x = as.integer(year), y = Electric)) +
+  geom_line(color = "#69b3a2", linewidth = 2) +
+  geom_point(size = 3, color = "#69b3a2") +
+  theme_bw()+
+  scale_x_continuous(breaks = seq(2013, 2024, by = 1)) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(
+    x = "Year",
+    y = "Number of Registered Vehicles",
+    title = "Evolution of Electric Vehicles in Brazil")
+
+ggplot(yearly_results_aggregate, aes(x = as.integer(year), y = Hybrid)) +
+  geom_line(color = "#69b3a2", linewidth = 2) +
+  geom_point(size = 3, color = "#69b3a2") +
+  theme_bw()+
+  scale_x_continuous(breaks = seq(2013, 2024, by = 1)) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(
+    x = "Year",
+    y = "Number of Registered Vehicles",
+    title = "Evolution of Hybrid Vehicles in Brazil")
+
+ggplot(yearly_results_aggregate, aes(x = as.integer(year), y = Other)) +
+  geom_line(color = "#69b3a2", linewidth = 2) +
+  geom_point(size = 3, color = "#69b3a2") +
+  theme_bw()+
+  scale_x_continuous(breaks = seq(2013, 2024, by = 1)) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(
+    x = "Year",
+    y = "Number of Registered Vehicles",
+    title = "Evolution of Non-Electric Vehicles in Brazil")
+
+
+
+
+yearly_results_agg_long <- yearly_results_aggregate %>% 
+  select(year,Electric, Hybrid,Other) %>% 
+  pivot_longer(
+    cols      = !year,
+    names_to  = "Category",
+    values_to = "Count"
+  )
+
+ggplot(yearly_results_agg_long, aes(x = as.integer(year), y = log(Count))) +
+  geom_line(color = "#69b3a2", linewidth = 2) +
+  geom_point(size = 3, color = "#69b3a2") +
+  theme_bw()+
+  scale_x_continuous(breaks = seq(2013, 2024, by = 1)) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(
+    x = "Year",
+    y = "Number of Registered Vehicles (log scale)",
+    title = "Evolution of Registered Vehicles in Brazil per Combustible Type") +
+  facet_wrap(~ Category, nrow = 1)
+
+
+
+
+
+
+ggplot(yearly_results_state, aes(x = as.integer(year), y = log(Electric))) +
+  geom_line(color = "#69b3a2", linewidth = 2) +
+  geom_point(size = 3, color = "#69b3a2") +
+  theme_bw()+
+  scale_x_continuous(breaks = seq(2013, 2024, by = 1)) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(
+    x = "Year",
+    y = "Number of Registered Vehicles (log scale)",
+    title = "Evolution of Electric Vehicles in Brazil")+
+  facet_wrap(~ name_state, nrow = 5)
 
 
 

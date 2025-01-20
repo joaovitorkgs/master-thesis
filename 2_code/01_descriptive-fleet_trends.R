@@ -137,6 +137,21 @@ all_categories <- bind_rows(categorias13,
 
 # 3.1 Function to create the data frames for analysis --------------------------
 
+file_paths <- c(
+  "1_raw_data/2_vehicle_fleet/2013_11_3_frota_uf_municipio_combustivel_nov_2013.xlsx",
+  "1_raw_data/2_vehicle_fleet/2014-11_3_frota_uf_municipio_combustivel_nov_2014.xlsx",
+  "1_raw_data/2_vehicle_fleet/2015-11_3_Frota_Por_UF_Municipio_Combustivel_NOV_2015.xlsx",
+  "1_raw_data/2_vehicle_fleet/2016-11_3_-_combustivel_-novembro_-2016.xlsx",
+  "1_raw_data/2_vehicle_fleet/2017-11_frota_por_uf_municipio_combustivel_nov_17.xlsx",
+  "1_raw_data/2_vehicle_fleet/2018-11_d_frota_por_uf_municipio_combustivel_novembro_2018.xlsx",
+  "1_raw_data/2_vehicle_fleet/2019-11_d_frota_por_uf_municipio_combustivel_novembro_2019.xlsx",
+  "1_raw_data/2_vehicle_fleet/2020-11_d_frota_por_uf_municipio_combustivel_novembro_2020.xlsx",
+  "1_raw_data/2_vehicle_fleet/2021-11_d_frota_por_uf_municipio_combustivel_novembro_2021.xlsx",
+  "1_raw_data/2_vehicle_fleet/2022-11_d_frota_por_uf_municipio_combustivel_novembro_2022.xlsx",
+  "1_raw_data/2_vehicle_fleet/2023-11_d_frota_por_uf_municipio_combustivel_novembro_2023.xlsx",
+  "1_raw_data/2_vehicle_fleet/2024-11_D_Frota_por_UF_Municipio_COMBUSTIVEL_Novembro_2024.xlsx")
+
+
 create_fleet_analysis_function <- function(file_paths, state_df) {
   
   # Function to process each file
@@ -259,7 +274,8 @@ plot_trend_ev_agg <- ggplot(yearly_results_aggregate, aes(x = as.integer(year), 
   labs(
     x = "Year",
     y = "Number of Registered Vehicles",
-    title = "Evolution of Electric Vehicles in Brazil")
+    title = "Evolution of Electric Vehicles in Brazil",
+    subtitle = "Source: National Traffic Secretariat, 2024")
 
 plot_trend_ev_agg
 
@@ -305,26 +321,32 @@ ggsave("./4_plots/plot_trend_other_agg.png",
 
 # All vehicles (aggregate, compared across categories)
 
-plot_trend_compared_cat <- ggplot(yearly_results_agg_long, aes(x = as.integer(year), y = log(Count))) +
-  geom_line(color = "#69b3a2", linewidth = 2) +
-  geom_point(size = 3, color = "#69b3a2") +
-  theme_bw()+
+plot_trend_compared_cat <- ggplot(yearly_results_agg_long, aes(x = as.integer(year), y = Count, color = Category)) +
+  geom_line(linewidth = 2) +
+  geom_point(size = 3) +
+  theme_bw() +
   scale_x_continuous(breaks = seq(2013, 2024, by = 1)) +
-  scale_y_continuous(labels = scales::comma) +
+  scale_y_continuous(
+    trans = "log10",
+    breaks = scales::trans_breaks("log10", function(x) 10^x), # Powers of 10
+    labels = scales::comma # Readable labels with commas
+  ) +
+  theme(
+    panel.grid.major.y = element_line(color = "gray", linetype = "dashed"), # Dashed grid lines for y-axis
+    panel.grid.minor.y = element_blank() # Remove minor grid lines for clarity
+  ) +
   labs(
     x = "Year",
-    y = "Number of Registered Vehicles (log scale)",
+    y = "Number of Registered Vehicles",
     title = "Evolution of Registered Vehicles in Brazil per Combustible Type",
-    subtitle = "Source: National Traffic Secretariat, 2024") +
-  facet_wrap(~ Category, nrow = 1)
+    subtitle = "Source: National Traffic Secretariat, 2024",
+    color = "Category"
+  )
 
 plot_trend_compared_cat
 
 ggsave("./4_plots/plot_trend_compared_cat.png",
-        plot   = plot_trend_compared_cat,
-        width  = 14,
-        height = 4.5,
-        units = "in")
+        plot   = plot_trend_compared_cat)
 
 
 

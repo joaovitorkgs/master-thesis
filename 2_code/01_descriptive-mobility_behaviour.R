@@ -128,7 +128,7 @@ plot_scatter_popsize_commute_reg <- ggplot(df_commute_cities, aes(x = tempo_medi
   ) +
   scale_x_continuous(name = "Average Commute Time (minutes)") +
   labs(
-    title = "Average Commute Time in Selected Cities in Brazil",
+    title = "Average Commute Time in Selected Cities in Brazil per Region",
     subtitle = "Source: MobiliDADOS, 2010"
   ) +
   theme_bw() + # Clean background

@@ -1,20 +1,6 @@
 # 1. Packages ------------------------------------------------------------------
 
-pacman::p_load(readr,        # Read CSV files
-               readxl,       # Read Excel files
-               dplyr,        # Data manipulation
-               tidyr,        # Data tidying and reshaping
-               ggplot2,      # Create data visualizations
-               scales,       # Format axes and legends (percentages, currencies)
-               stringr,      # String manipulation
-               lubridate,    # Date and time manipulation
-               basedosdados, # Access to Brazilian public data via BigQuery
-               geobr,        # Brazilian geographic data
-               sf,           # Handle spatial/geographic data
-               viridis,      # Color palettes for data visualization
-               httr,
-               writexl,
-               RColorBrewer) # Additional color palettes for plotting
+source("./2_code/00_packages.R")
 
 
 # 2. Raw dataframes ------------------------------------------------------------

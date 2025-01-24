@@ -1,20 +1,12 @@
+# 1. Packages ------------------------------------------------------------------
+
+source("./2_code/00_packages.R")
 
 
-pacman::p_load (readr,        # Ler arquivos .csv
-                readxl,       # Ler arquivos .xlsx
-                dplyr,        # Manipulacao de dados
-                tidyr,        # Manipulacao de dados
-                ggplot2,      # Criacao de gráficos
-                scales,       # Uso de porcentages
-                stringr,      # Manipulacao de strings
-                lubridate, 
-                basedosdados) # BigQuery from public data on Brazil
+# 2. Raw dataframes ------------------------------------------------------------
 
 
-# Defina o seu projeto no Google Cloud
-set_billing_id("central-stream-297218")
-
-# Para carregar o dado direto no R
+# Loading data from "Base dos Dados"
 query <- "
 SELECT
     dados.id_municipio AS id_municipio,
@@ -31,6 +23,9 @@ LEFT JOIN (SELECT DISTINCT id_municipio,nome  FROM `basedosdados.br_bd_diretorio
     ON dados.id_municipio = diretorio_id_municipio.id_municipio
 "
 
+# Writing the demographic info per city
+
 pop_city <- read_sql(query, billing_project_id = get_billing_id())
 
+# Saving it as a .csv file
 write_csv(pop_city, "./1_raw_data/0_demographics/pop_city.csv")

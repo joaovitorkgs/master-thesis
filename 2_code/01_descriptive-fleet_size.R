@@ -7,9 +7,18 @@ source("./2_code/00_packages.R")
 
 # 2.1. Dowloaded files ---------------------------------------------------------
 
-# Vehicle data on municipal level (per fuel type)
-fleet_df_nov24 <- read_excel("1_raw_data/2_vehicle_fleet/D_Frota_por_UF_Municipio_COMBUSTIVEL_Novembro_2024.xlsx")
-
+fleet_df_nov13 <- read_excel("1_raw_data/2_vehicle_fleet/2013_11_3_frota_uf_municipio_combustivel_nov_2013.xlsx")
+fleet_df_nov14 <- read_excel("1_raw_data/2_vehicle_fleet/2014-11_3_frota_uf_municipio_combustivel_nov_2014.xlsx")
+fleet_df_nov15 <- read_excel("1_raw_data/2_vehicle_fleet/2015-11_3_Frota_Por_UF_Municipio_Combustivel_NOV_2015.xlsx")
+fleet_df_nov16 <- read_excel("1_raw_data/2_vehicle_fleet/2016-11_3_-_combustivel_-novembro_-2016.xlsx")
+fleet_df_nov17 <- read_excel("1_raw_data/2_vehicle_fleet/2017-11_frota_por_uf_municipio_combustivel_nov_17.xlsx")
+fleet_df_nov18 <- read_excel("1_raw_data/2_vehicle_fleet/2018-11_d_frota_por_uf_municipio_combustivel_novembro_2018.xlsx")
+fleet_df_nov19 <- read_excel("1_raw_data/2_vehicle_fleet/2019-11_d_frota_por_uf_municipio_combustivel_novembro_2019.xlsx")
+fleet_df_nov20 <- read_excel("1_raw_data/2_vehicle_fleet/2020-11_d_frota_por_uf_municipio_combustivel_novembro_2020.xlsx")
+fleet_df_nov21 <- read_excel("1_raw_data/2_vehicle_fleet/2021-11_d_frota_por_uf_municipio_combustivel_novembro_2021.xlsx")
+fleet_df_nov22 <- read_excel("1_raw_data/2_vehicle_fleet/2022-11_d_frota_por_uf_municipio_combustivel_novembro_2022.xlsx")
+fleet_df_nov23 <- read_excel("1_raw_data/2_vehicle_fleet/2023-11_d_frota_por_uf_municipio_combustivel_novembro_2023.xlsx")
+fleet_df_nov24 <- read_excel("1_raw_data/2_vehicle_fleet/2024-11_D_Frota_por_UF_Municipio_COMBUSTIVEL_Novembro_2024.xlsx")
 
 # 2.2. Files from packages -----------------------------------------------------
 
@@ -92,7 +101,7 @@ no_axis <- theme(axis.title=element_blank(),
 # Percentage of electric vehicles per State
 
 # Total e-Vehicles
-plot_total_e_vehicles <- ggplot() +
+map_total_e_vehicles <- ggplot() +
   geom_sf(data=electric_vehicles_per_state, aes(fill=total_electric_vehicles), color=NA, size=.15) +
   labs(
     title = "Electric Vehicle Fleet in Brazil",
@@ -111,12 +120,12 @@ plot_total_e_vehicles <- ggplot() +
   ) +
   no_axis
 
-plot_total_e_vehicles
-ggsave("./4_plots/plot_total_e_vehicles.png", plot = plot_total_e_vehicles)
+map_total_e_vehicles
+ggsave("./4_plots/plot_total_e_vehicles.png", plot = map_total_e_vehicles)
 
 
 # Electric vehicles as a percentage of the total state fleet
-plot_share_of_e_vehicles <- ggplot() +
+map_share_of_e_vehicles <- ggplot() +
   geom_sf(data=electric_vehicles_per_state, aes(fill=percentage_num), color=NA, size=.15) +
   labs(
     title = "Vehicle Fleet in Brazil",
@@ -135,12 +144,12 @@ plot_share_of_e_vehicles <- ggplot() +
   ) +
   no_axis
 
-plot_share_of_e_vehicles
-ggsave("./4_plots/plot_share_of_e_vehicles.png", plot = plot_share_of_e_vehicles)
+map_share_of_e_vehicles
+ggsave("./4_plots/map_share_of_e_vehicles.png", plot = map_share_of_e_vehicles)
 
 
 # Total Vehicles per Capita
-plot_vehicles_per_capita <- ggplot() +
+map_vehicles_per_capita <- ggplot() +
   geom_sf(data=electric_vehicles_per_state, aes(fill=vehicle_per_capita), color=NA, size=.15) +
   labs(
     title = "Vehicle Fleet in Brazil",
@@ -159,12 +168,12 @@ plot_vehicles_per_capita <- ggplot() +
   ) +
   no_axis
 
-plot_vehicles_per_capita
-ggsave("./4_plots/plot_vehicles_per_capita.png", plot = plot_vehicles_per_capita)
+map_vehicles_per_capita
+ggsave("./4_plots/map_vehicles_per_capita.png", plot = map_vehicles_per_capita)
 
 
 # Electric Vehicles per Capita
-plot_e_vehicles_per_capita <- ggplot() +
+map_e_vehicles_per_capita <- ggplot() +
   geom_sf(data=electric_vehicles_per_state, aes(fill=electric_vehicle_per_capita), color=NA, size=.15) +
   labs(
     title = "Vehicle Fleet in Brazil",
@@ -183,6 +192,6 @@ plot_e_vehicles_per_capita <- ggplot() +
   ) +
   no_axis
 
-plot_e_vehicles_per_capita
-ggsave("./4_plots/plot_e_vehicles_per_capita.png", plot = plot_e_vehicles_per_capita)
+map_e_vehicles_per_capita
+ggsave("./4_plots/map_e_vehicles_per_capita.png", plot = map_e_vehicles_per_capita)
 

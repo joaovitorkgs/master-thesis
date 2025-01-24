@@ -75,7 +75,7 @@ state_df_UF <- state_df %>%
 
 energy_aggregate_UF <- df_electricity_date %>% 
   left_join(state_df_UF, by = "sigla_uf") %>% 
-  select(ano_mes_date,sigla_uf,sigla_uf_nome,tipo_consumo,name_region,consumo,numero_consumidores,geom) %>% 
+  select(ano, ano_mes_date,sigla_uf,sigla_uf_nome,tipo_consumo,name_region,consumo,numero_consumidores,geom) %>% 
   rename(`Region Name` = name_region)
 
 
@@ -95,8 +95,21 @@ energy_aggregate_all_UF <- energy_aggregate_UF %>%
   group_by(ano_mes_date, tipo_consumo,`Region Name`) %>%
   summarise(total = sum(consumo))
 
+energy_aggregate_total_UF <- energy_aggregate_UF %>%
+  filter(tipo_consumo == ("Total")) %>% 
+  group_by(ano_mes_date, tipo_consumo,sigla_uf_nome) %>%
+  summarise(total = sum(consumo))
 
+# Total Consumption per State (2023)
 
+energy_aggregate_total_UF_23 <- energy_aggregate_UF %>%
+  filter(tipo_consumo == ("Total")) %>% 
+  filter(ano == 2023) %>% 
+  group_by(sigla_uf) %>%
+  summarise(total = sum(consumo)) %>% 
+  left_join(state_df_UF, by = "sigla_uf")
+
+  
 
 
 # 3.2. Plots -------------------------------------------------------------------
@@ -157,7 +170,7 @@ ggsave("./4_plots/plot_trend_energy_all_agg.png",
 
 
 
-
+# Breakdown per Type per Region
 plot_trend_energy_regions_agg <- ggplot(energy_aggregate_all_UF, 
                                         aes(x = ano_mes_date, 
                                             y = log((total / 1000)), 
@@ -173,7 +186,7 @@ plot_trend_energy_regions_agg <- ggplot(energy_aggregate_all_UF,
   ) +
   labs(
     x = "Year",
-    title = "Aggregate Electricity Consumption in Brazil per Type",
+    title = "Aggregate Electricity Consumption in Brazil's 5 Regions per Type",
     subtitle = "Source: Ministry of Mines and Energy, 2024",
     color = "Consumption Type"
   ) +
@@ -187,6 +200,32 @@ ggsave("./4_plots/plot_trend_energy_regions_agg.png",
        units = "in",
        width = 15,
        height = 7)
+
+
+# Breakdown per State (Total Consumption)
+
+# Total consumption
+plot_trend_energy_total_UF <- ggplot(energy_aggregate_total_UF, 
+                                      aes(x = ano_mes_date, 
+                                          y = log((total / 1000)), 
+                                          color = tipo_consumo, 
+                                          group = tipo_consumo)) +
+  geom_line(linewidth = 1) +  # Line plot for each 'tipo_consumo'
+  theme_bw() +                  # Clean theme
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +  # Show only the first month of each year
+  scale_y_continuous(labels = scales::comma) +               # Format y-axis labels
+  labs(
+    x = "Year",
+    y = "Total Electricity Consumption (GWh)",
+    title = "Total Electricity Consumption in Brazilian States per Year",
+    subtitle = "Source: Ministry of Mines and Energy, 2024",
+    color = "Consumption Type"  # Legend title for 'tipo_consumo'
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)  # Tilt x-axis labels
+  ) +
+  facet_wrap(~ sigla_uf_nome, nrow = 6)
+
 
 
 
@@ -204,21 +243,37 @@ ggsave("./4_plots/plot_trend_energy_regions_agg.png",
 
 
 
+# 3.3. Maps --------------------------------------------------------------------
 
+# Convert the df to generate the map
+energy_aggregate_total_UF_23 <- st_as_sf(energy_aggregate_total_UF_23)
 
+# Create a variable for the theme in the plots
+no_axis <- theme(axis.title=element_blank(),
+                 axis.text=element_blank(),
+                 axis.ticks=element_blank())
 
+# Total Energy consumption per State in 2023
 
+map_total_energy_consumption_23 <- ggplot() +
+  geom_sf(data=energy_aggregate_total_UF_23, aes(fill=(total/1000)), color=NA, size=.15) +
+  labs(
+    title = "Total Energy Consumption per State in 2023",
+    subtitle = "Source: Ministry of Mines and Energy, 2024",
+    fill = "Energy Consumption") +
+  geom_sf_text(data=energy_aggregate_total_UF_23, aes(label=abbrev_state), size=2, color="black") +
+  scale_fill_distiller(palette="YlOrRd", name="Energy Consumption (GWh)", direction = 1, labels = scales::comma_format()) + 
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 8),
+    panel.grid = element_blank(),
+    plot.background = element_rect(fill = "#ffffff", color = NA)
+  ) +
+  no_axis
 
-# Ideas for the way forward:
-
-# Idea 1:
-# Use tables on population size for the states base for the year in question for
-# comparation of states which consume the most electricity in total and per capita
-
-# Idea 2:
-# Describe how tax collection works for electricity in States
-# Estimate electricity tax income
-
-
-
+map_total_energy_consumption_23
+ggsave("./4_plots/map_total_energy_consumption_23.png", plot = map_total_energy_consumption_23)
 

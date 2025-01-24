@@ -5,6 +5,8 @@ source("./2_code/00_packages.R")
 
 # 2. Raw Dataframes-------------------------------------------------------------
 
+# 2.1. Files from BigQuery ----------------------------------------------------
+
 query <- "
 SELECT
     dados.ano as ano,
@@ -29,29 +31,179 @@ df_electricity_date <- df_electricity %>%
     mes = sprintf("%02d", mes),             # Format 'mes' as double digits
     ano_mes = paste(ano, mes, sep = "-"),   # Combine 'ano' and 'mes'
     ano_mes_date = as.Date(paste(ano, mes, "01", sep = "-")) # Create date column
-  )
+  ) 
 
-# 3. Electricity Consumption ---------------------------------------------------
+df_electricity_date <- df_electricity_date %>%
+  mutate(tipo_consumo = case_when(
+    tipo_consumo == "Cativo" ~ "Captive (regulated) consumers",
+    tipo_consumo == "Comercial" ~ "Commercial",
+    tipo_consumo == "Outros" ~ "Others",
+    tipo_consumo == "Residencial" ~ "Residential",
+    TRUE ~ tipo_consumo # Keep original value if no match
+  ))
 
-# 3.1. Aggregate Electricity consumption
 
-electricity_residential <- df_electricity_date %>%
-  group_by(ano_mes) %>%
+# 2.2. Files from packages -----------------------------------------------------
+
+# State data with geographical coordinates
+state_df <- geobr::read_state(year = 2020,showProgress = FALSE) 
+city_df <- geobr::read_municipality(year = 2020,showProgress = TRUE)
+
+
+
+# 3. Energy Consumption --------------------------------------------------------
+
+# 3.1. Aggregate Energy consumption
+
+# Total consumption nationwide
+
+energy_aggregate_all <- df_electricity_date %>%
+  filter(tipo_consumo != ("Total")) %>% 
+  group_by(ano_mes_date, tipo_consumo) %>%
+  summarise(total = sum(consumo))
+
+energy_aggregate_total <- df_electricity_date %>%
+  filter(tipo_consumo == ("Total")) %>% 
+  group_by(ano_mes_date, tipo_consumo) %>%
+  summarise(total = sum(consumo))
+
+
+# Total consumption per State
+
+state_df_UF <- state_df %>% 
+  mutate(sigla_uf = abbrev_state)
+
+energy_aggregate_UF <- df_electricity_date %>% 
+  left_join(state_df_UF, by = "sigla_uf") %>% 
+  select(ano_mes_date,sigla_uf,sigla_uf_nome,tipo_consumo,name_region,consumo,numero_consumidores,geom) %>% 
+  rename(`Region Name` = name_region)
+
+
+# Translation of region names
+energy_aggregate_UF <- energy_aggregate_UF %>%
+  mutate(`Region Name` = case_when(
+    `Region Name` == "Norte" ~ "North",
+    `Region Name` == "Nordeste" ~ "Northeast",
+    `Region Name` == "Centro Oeste" ~ "Central-West",
+    `Region Name` == "Sudeste" ~ "Southeast",
+    `Region Name` == "Sul" ~ "South",
+    TRUE ~ `Region Name` # Keep original value if no match
+  ))
+
+energy_aggregate_all_UF <- energy_aggregate_UF %>%
+  filter(tipo_consumo != ("Total")) %>% 
+  group_by(ano_mes_date, tipo_consumo,`Region Name`) %>%
   summarise(total = sum(consumo))
 
 
 
-plot_trend_ev_agg <- ggplot(yearly_results_aggregate, aes(x = as.integer(year), y = Electric)) +
-  geom_line(color = "#69b3a2", linewidth = 2) +
-  geom_point(size = 3, color = "#69b3a2") +
-  theme_bw()+
-  scale_x_continuous(breaks = seq(2013, 2024, by = 1)) +
-  scale_y_continuous(labels = scales::comma) +
+
+
+# 3.2. Plots -------------------------------------------------------------------
+
+# All types in same chart
+
+# Total consumption
+plot_trend_energy_total_agg <- ggplot(energy_aggregate_total, 
+                                  aes(x = ano_mes_date, 
+                                      y = (total / 1000), 
+                                      color = tipo_consumo, 
+                                      group = tipo_consumo)) +
+  geom_line(linewidth = 1) +  # Line plot for each 'tipo_consumo'
+  theme_bw() +                  # Clean theme
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +  # Show only the first month of each year
+  scale_y_continuous(labels = scales::comma) +               # Format y-axis labels
   labs(
     x = "Year",
-    y = "Number of Registered Vehicles",
-    title = "Evolution of Electric Vehicles in Brazil",
-    subtitle = "Source: National Traffic Secretariat, 2024")
+    y = "Total Electricity Consumption (GWh)",
+    title = "Aggregate Electricity Consumption in Brazil per Type",
+    subtitle = "Source: Ministry of Mines and Energy, 2024",
+    color = "Consumption Type"  # Legend title for 'tipo_consumo'
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)  # Tilt x-axis labels
+  )
+
+ggsave("./4_plots/plot_trend_energy_total_agg.png",
+       plot = plot_trend_energy_total_agg,
+       units = "in")
+
+
+# All types, except "Total"
+plot_trend_energy_all_agg <- ggplot(energy_aggregate_all, 
+                                  aes(x = ano_mes_date, 
+                                      y = (total / 1000), 
+                                      color = tipo_consumo, 
+                                      group = tipo_consumo)) +
+  geom_line(linewidth = 1) +  # Line plot for each 'tipo_consumo'
+  theme_bw() +                  # Clean theme
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +  # Show only the first month of each year
+  scale_y_continuous(labels = scales::comma) +               # Format y-axis labels
+  labs(
+    x = "Year",
+    y = "Total Electricity Consumption (GWh)",
+    title = "Aggregate Electricity Consumption in Brazil per Type",
+    subtitle = "Source: Ministry of Mines and Energy, 2024",
+    color = "Consumption Type"  # Legend title for 'tipo_consumo'
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)  # Tilt x-axis labels
+  )
+
+
+ggsave("./4_plots/plot_trend_energy_all_agg.png",
+       plot = plot_trend_energy_all_agg,
+       units = "in")
+
+
+
+
+plot_trend_energy_regions_agg <- ggplot(energy_aggregate_all_UF, 
+                                        aes(x = ano_mes_date, 
+                                            y = log((total / 1000)), 
+                                            color = tipo_consumo, 
+                                            group = tipo_consumo)) +
+  geom_line(linewidth = 1) +
+  theme_bw() +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  scale_y_continuous(
+    breaks = log(c(150, 500, 1000, 3000, 8000)),  # Define nice round numbers
+    labels = function(x) scales::comma(round(exp(x))),  # Transform and round labels
+    name = "Total Electricity Consumption (GWh) - Log Scale"
+  ) +
+  labs(
+    x = "Year",
+    title = "Aggregate Electricity Consumption in Brazil per Type",
+    subtitle = "Source: Ministry of Mines and Energy, 2024",
+    color = "Consumption Type"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  ) + 
+  facet_wrap(~ `Region Name`, nrow = 2)
+
+ggsave("./4_plots/plot_trend_energy_regions_agg.png",
+       plot = plot_trend_energy_regions_agg,
+       units = "in",
+       width = 15,
+       height = 7)
+
+
+
+# For future reference:
+# In the context of Brazilian electricity markets, "Cativo" refers to consumers
+# who purchase electricity at regulated tariffs from distribution companies.
+# These consumers cannot choose their electricity supplier and are subject to
+# government-regulated pricing. This category typically includes small businesses,
+# households, and other entities that lack direct access to the free market for electricity.
+
+
+# Look into: "The Governance of Regulators  Driving Performance at Brazil’s
+# Electricity Regulatory Agency, OECD, 2021, p. 56"
+
+
+
+
 
 
 

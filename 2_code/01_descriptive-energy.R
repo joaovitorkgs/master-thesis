@@ -1,11 +1,9 @@
-# Packages and raw dataframes -- -----------------------------------------------
+# 1. Packages and raw dataframes -- --------------------------------------------
 
 source("./2_code/00_packages.R")
 
-# Electricity consumption  -----------------------------------------------------
 
-set_billing_id("central-stream-297218")
-
+# 2. Raw Dataframes-------------------------------------------------------------
 
 query <- "
 SELECT
@@ -21,11 +19,42 @@ LEFT JOIN (SELECT DISTINCT sigla,nome  FROM `basedosdados.br_bd_diretorios_brasi
     ON dados.sigla_uf = diretorio_sigla_uf.sigla
 "
 
-df <- read_sql(query, billing_project_id = get_billing_id())
+df_electricity <- read_sql(query, billing_project_id = get_billing_id())
 
-df %>% 
-  group_by(tipo_consumo, sigla_uf) %>% 
+# Adjusted main dataframe to include date information
+
+df_electricity_date <- df_electricity %>% 
+  mutate(
+    mes = as.numeric(as.character(mes)),    # Convert 'mes' to numeric if it's not
+    mes = sprintf("%02d", mes),             # Format 'mes' as double digits
+    ano_mes = paste(ano, mes, sep = "-"),   # Combine 'ano' and 'mes'
+    ano_mes_date = as.Date(paste(ano, mes, "01", sep = "-")) # Create date column
+  )
+
+# 3. Electricity Consumption ---------------------------------------------------
+
+# 3.1. Aggregate Electricity consumption
+
+electricity_residential <- df_electricity_date %>%
+  group_by(ano_mes) %>%
   summarise(total = sum(consumo))
+
+
+
+plot_trend_ev_agg <- ggplot(yearly_results_aggregate, aes(x = as.integer(year), y = Electric)) +
+  geom_line(color = "#69b3a2", linewidth = 2) +
+  geom_point(size = 3, color = "#69b3a2") +
+  theme_bw()+
+  scale_x_continuous(breaks = seq(2013, 2024, by = 1)) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(
+    x = "Year",
+    y = "Number of Registered Vehicles",
+    title = "Evolution of Electric Vehicles in Brazil",
+    subtitle = "Source: National Traffic Secretariat, 2024")
+
+
+
 
 
 # Ideas for the way forward:
@@ -41,20 +70,3 @@ df %>%
 
 
 
-
-# Install and load required packages
-install.packages("readxl")
-install.packages("httr")
-library(readxl)
-library(httr)
-
-# Specify the URL
-url <- "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-estatisticos/de/vdpb/vecf/2023-vendas-etanol.xlsx"
-
-# Download and save as a temporary file
-temp_file <- tempfile(fileext = ".xlsx")
-GET(url, write_disk(temp_file, overwrite = TRUE))
-
-# Read the Excel file starting from a specific row (e.g., row 5)
-data <- read_excel(temp_file, skip = 4)  # Skip 4 rows to start reading from row 5
-head(data)  # Display first few rows

@@ -228,16 +228,8 @@ cnae_sector_names <- data.frame(
 
 # 3. Tax Revenue analysis ------------------------------------------------------
 
-# 3.1. Federal Tax Revenue -----------------------------------------------------
+# 3.1. Federal Tax Revenue per Economic Sector -----------------------------------------------------
 
-# 3.1.1 Data on tax revenue per legal nature of registered firms ---------------
-unique(df_federal_natjuridica$natureza_juridica_codigo_descricao)
-
-# Finding: I cannot distinguish the economic activity or anything related to fuel
-# based on this data frame.
-
-
-# 3.1.3 Data on tax revenue per economic sector of registered firms ------------
 
 # Cleaning the original data set 
 
@@ -249,7 +241,9 @@ df_federal_cnae_date <- df_federal_cnae %>%
     ano_mes_date = as.Date(paste(ano, mes, "01", sep = "-")) # Create date column
   ) 
 
-# Selecting all fuels which are levied on fuel sales (as per Esteves, 2020, p.6)
+# 3.1.1 All fuel taxes levied on fuel-related activities -----------------------
+
+# Selecting all taxes which are levied on fuel sales (as per Esteves, 2020, p.6)
 
 federal_cnae_fuel_alltaxes <- df_federal_cnae_date %>% 
   select(ano_mes_date,           # Year and month
@@ -264,7 +258,6 @@ federal_cnae_fuel_alltaxes <- df_federal_cnae_date %>%
   replace(is.na(.),0) %>% 
   mutate(fuel_taxes = ii + pis_pasep + ie + cofins + cide_combustiveis)
          
-
 
 # Data frames for specific sectors (all federal taxes levied on fuel-related economic activities)
 
@@ -289,6 +282,10 @@ federal_allsectors_fueltaxes <- federal_cnae_fuel_alltaxes %>%
   left_join(cnae_sector_names, by = "secao_sigla") %>% 
   select(ano_mes_date, secao_sigla, sectors_en, fuel_taxes) %>% 
   drop_na()
+
+
+
+# 3.1.2. CIDE Combustíveis only ------------------------------------------------
 
 
 # Data frames for specific sectors ("CIDE Combustíveis" only)
@@ -324,6 +321,95 @@ federal_CIDE_allsectors <- federal_CIDE_allsectors %>%
 # 4. Plots ---------------------------------------------------------------------
 
 # 4.1. Federal Tax Revenue -----------------------------------------------------
+
+# 4.1.1. All fuel taxes combined -----------------------------------------------
+
+# Economic Sector D (Electricity and Gas)
+
+plot_trend_fed_revenue_alltaxes_electgas <- ggplot(federal_energysector_fueltaxes,
+                                               aes(x = ano_mes_date, 
+                                                   y = (fuel_taxes/1000000000))) +
+  geom_line(linewidth = 1) +  # Line plot for each 'tipo_consumo'
+  theme_bw() +                  # Clean theme
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +  # Show only the first month of each year
+  scale_y_continuous(labels = scales::comma) +               # Format y-axis labels
+  labs(
+    x = "Year",
+    y = "Total Tax Revenue per Month (Billion BRL)",
+    title = "Total Federal Tax Revenue levied on Fuel-Related Economic Activities",
+    subtitle = "Source: Special Secretariat of the Federal Revenue of Brazil (RFB), 2024",
+    caption = "Note: Data related to firms registered under D category only, which refers to the electricity and gas sector."
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),  # Tilt x-axis labels
+    plot.caption = element_text(hjust = 0))
+
+ggsave("./4_plots/plot_trend_fed_revenue_alltaxes_electgas.png",
+       plot = plot_trend_fed_revenue_alltaxes_electgas,
+       units = "in")
+
+
+# Economic Sector G (includes gas stations)
+
+plot_trend_fed_revenue_alltaxes_gasstation <- ggplot(federal_gasstation_fueltaxes, 
+                                                 aes(x = ano_mes_date, 
+                                                     y = fuel_taxes/1000000000)) +
+  geom_line(linewidth = 1) +  # Line plot for each 'tipo_consumo'
+  theme_bw() +                  # Clean theme
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +  # Show only the first month of each year
+  scale_y_continuous(labels = scales::comma) +               # Format y-axis labels
+  labs(
+    x = "Year",
+    y = "Total Tax Revenue per Month (Billion BRL)",
+    title = "Total Federal Tax Revenue levied on Fuel-Related Economic Activities",
+    subtitle = "Source: Special Secretariat of the Federal Revenue of Brazil (RFB), 2024",
+    caption = "Note: Data related to firms registered under G category only, which includes gas stations and retail sale of fuels."
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),  # Tilt x-axis labels
+    plot.caption = element_text(hjust = 0)
+    
+  )
+
+ggsave("./4_plots/plot_trend_fed_revenue_alltaxes_gasstation.png",
+       plot = plot_trend_fed_revenue_alltaxes_gasstation,
+       units = "in")
+
+
+# All sectors
+
+plot_trend_fed_revenue_alltaxes_groups <- ggplot(federal_allsectors_fueltaxes,
+                                             aes(x = ano_mes_date, 
+                                                 y = (fuel_taxes/1000000000))) +
+  geom_line(linewidth = 0.7) +
+  theme_bw() +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  scale_y_continuous(trans = "log10",
+                     breaks = c(1e5, 1e6, 1e7, 1e8, 1e9, 1e10),
+                     labels = c("100k", "1M", "10M", "100M", "1B", "10B")) +
+  labs(
+    x = "Year",
+    y = "Total Tax Revenue per Month (Billion BRL)",
+    title = "Total Federal Tax Revenue levied on Fuel-Related Economic Activities",
+    subtitle = "Source: Special Secretariat of the Federal Revenue of Brazil (RFB), 2024"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  ) +
+  facet_wrap(~ sectors_en, nrow = 6)
+
+ggsave("./4_plots/plot_trend_fed_revenue_alltaxes_groups.png",
+       plot = plot_trend_fed_revenue_alltaxes_groups,
+       units = "in",
+       width = 10,
+       height = 10)
+
+# Note: there seems to be an issue with the data, as the revenue from 2024 grows
+# exponentially for some sectors. It is either a problem with data input, or there
+# is a change on the legislation for this tax specifically which I am not aware of
+
+
+
 
 # 4.1.2. CIDE Combustiveis -----------------------------------------------------
 
@@ -412,7 +498,7 @@ ggsave("./4_plots/plot_trend_fed_revenue_CIDE_groups.png",
 
 
 
-# 4.1.2. CIDE Combustiveis (up to 2023 only) -----------------------------------
+# 4.1.3. CIDE Combustiveis (up to 2023 only) -----------------------------------
 
 
 # Changing the data sets to remove values after January 2024 

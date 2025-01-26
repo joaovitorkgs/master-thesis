@@ -380,16 +380,16 @@ ggsave("./4_plots/plot_trend_fed_revenue_alltaxes_gasstation.png",
 
 plot_trend_fed_revenue_alltaxes_groups <- ggplot(federal_allsectors_fueltaxes,
                                              aes(x = ano_mes_date, 
-                                                 y = (fuel_taxes/1000000000))) +
+                                                 y = fuel_taxes)) +
   geom_line(linewidth = 0.7) +
   theme_bw() +
   scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
   scale_y_continuous(trans = "log10",
-                     breaks = c(1e5, 1e6, 1e7, 1e8, 1e9, 1e10),
-                     labels = c("100k", "1M", "10M", "100M", "1B", "10B")) +
+                     breaks = c(1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11),
+                     labels = c("100k", "1M", "10M", "100M", "1B", "10B", "100B"))+
   labs(
     x = "Year",
-    y = "Total Tax Revenue per Month (Billion BRL)",
+    y = "Total Tax Revenue per Month (BRL) - log transformed",
     title = "Total Federal Tax Revenue levied on Fuel-Related Economic Activities",
     subtitle = "Source: Special Secretariat of the Federal Revenue of Brazil (RFB), 2024"
   ) +
@@ -398,16 +398,12 @@ plot_trend_fed_revenue_alltaxes_groups <- ggplot(federal_allsectors_fueltaxes,
   ) +
   facet_wrap(~ sectors_en, nrow = 6)
 
+
 ggsave("./4_plots/plot_trend_fed_revenue_alltaxes_groups.png",
        plot = plot_trend_fed_revenue_alltaxes_groups,
        units = "in",
        width = 10,
        height = 10)
-
-# Note: there seems to be an issue with the data, as the revenue from 2024 grows
-# exponentially for some sectors. It is either a problem with data input, or there
-# is a change on the legislation for this tax specifically which I am not aware of
-
 
 
 

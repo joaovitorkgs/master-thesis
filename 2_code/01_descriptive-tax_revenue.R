@@ -246,7 +246,8 @@ df_federal_cnae_date <- df_federal_cnae %>%
 # Selecting all taxes which are levied on fuel sales (as per Esteves, 2020, p.6)
 
 federal_cnae_fuel_alltaxes <- df_federal_cnae_date %>% 
-  select(ano_mes_date,           # Year and month
+  select(ano,                    # Year
+         ano_mes_date,           # Year and month in date format
          secao_sigla,            # Economic sector classification
          imposto_importacao,     # Import tax
          pis_pasep,              # Tax to fund social benefits
@@ -274,7 +275,7 @@ federal_energysector_fueltaxes <- federal_cnae_fuel_alltaxes %>%
   summarise(fuel_taxes = sum(fuel_taxes, na.rm = TRUE))
 
 federal_allsectors_fueltaxes <- federal_cnae_fuel_alltaxes %>% 
-  select(ano_mes_date, secao_sigla, fuel_taxes) %>%  # "cide_combustiveis" refers to a specific tax paid for fuel
+  select(ano, ano_mes_date, secao_sigla, fuel_taxes) %>%  # "cide_combustiveis" refers to a specific tax paid for fuel
   group_by(ano_mes_date, secao_sigla) %>% 
   summarise(fuel_taxes = sum(fuel_taxes, na.rm = TRUE))
 
@@ -282,6 +283,34 @@ federal_allsectors_fueltaxes <- federal_cnae_fuel_alltaxes %>%
   left_join(cnae_sector_names, by = "secao_sigla") %>% 
   select(ano_mes_date, secao_sigla, sectors_en, fuel_taxes) %>% 
   drop_na()
+
+
+federal_allsectors_unpivot <- federal_cnae_fuel_alltaxes %>% 
+  select(-ano_mes_date) %>% 
+  group_by(ano) %>% 
+  summarise(
+    pis_pasep         = sum(pis_pasep),
+    ii                = sum(ii),
+    ie                = sum(ie),
+    cofins            = sum(cofins),
+    cide_combustiveis = sum(cide_combustiveis),
+    fuel_taxes        = sum(fuel_taxes)) %>% 
+  pivot_longer(
+    cols = c(pis_pasep, ii, ie, cofins, cide_combustiveis, fuel_taxes),
+    names_to = "tax_type",
+    values_to = "value") 
+
+federal_allsectors_unpivot <- federal_allsectors_unpivot %>%
+  filter(tax_type != "fuel_taxes") %>% 
+  mutate(tax_type = case_when(
+    tax_type == "pis_pasep" ~ "PIS/PASEP",
+    tax_type == "ii"        ~ "Import Tax",
+    tax_type == "ie"        ~ "Export Tax",
+    tax_type == "cofins"    ~ "COFINS",
+    tax_type == "cide_combustiveis"    ~ "CIDE Combustíveis",
+    TRUE ~ tax_type # Keep original value if no match
+  )) %>% 
+  mutate(ano = as.Date(paste(ano, "01", "01", sep = "-")))
 
 
 
@@ -313,7 +342,7 @@ federal_CIDE_allsectors <- df_federal_cnae_date %>%
 federal_CIDE_allsectors <- federal_CIDE_allsectors %>% 
   left_join(cnae_sector_names, by = "secao_sigla") %>% 
   select(ano_mes_date, secao_sigla, sectors_en, `CIDE Combustíveis`) %>% 
-  drop_na()
+  drop_na() 
 
 
 
@@ -404,6 +433,60 @@ ggsave("./4_plots/plot_trend_fed_revenue_alltaxes_groups.png",
        units = "in",
        width = 10,
        height = 10)
+
+# All sectors split by tax type
+
+plot_trend_fed_revenue_alltaxes_taxtype_panels <- ggplot(federal_allsectors_unpivot,
+                                                 aes(x = ano, 
+                                                     y = value)) +
+  geom_line(linewidth = 0.7) +
+  theme_bw() +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  scale_y_continuous(trans = "log10",
+                     breaks = c(1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11),
+                     labels = c("100k", "1M", "10M", "100M", "1B", "10B", "100B"))+
+  labs(
+    x = "Year",
+    y = "Total Tax Revenue per Month (BRL) - log transformed",
+    title = "Total Federal Tax Revenue levied on Fuel-Related Economic Activities",
+    subtitle = "Source: Special Secretariat of the Federal Revenue of Brazil (RFB), 2024",
+    caption = "Note: COFINS and PIS/PASEP are taxes levied to fund public social security and benefits. CIDE Combustíveis \nis a tax for fuel-related economic activities only, used to fund infrastructure and fuel subsidies."
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.caption = element_text(hjust = 0)) +
+  facet_wrap(~ tax_type, nrow = 2)
+
+ggsave("./4_plots/plot_trend_fed_revenue_alltaxes_taxtype_panels.png",
+       plot = plot_trend_fed_revenue_alltaxes_taxtype_panels)
+
+
+plot_trend_fed_revenue_alltaxes_taxtype_1panel <- ggplot(federal_allsectors_unpivot,
+                                                  aes(x = ano, 
+                                                      y = value,
+                                                      color = tax_type)) +  # Add color aesthetic
+  geom_line(linewidth = 1) +
+  theme_bw() +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  scale_y_continuous(trans = "log10",
+                     breaks = c(1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11),
+                     labels = c("100k", "1M", "10M", "100M", "1B", "10B", "100B")) +
+  labs(
+    x = "Year",
+    y = "Total Tax Revenue per Month (BRL) - log transformed",
+    title = "Total Federal Tax Revenue levied on Fuel-Related Economic Activities",
+    subtitle = "Source: Special Secretariat of the Federal Revenue of Brazil (RFB), 2024",
+    color = "Tax Type",
+    caption = "Note: COFINS and PIS/PASEP are taxes levied to fund public social security and benefits. CIDE Combustíveis \nis a tax for fuel-related economic activities only, used to fund infrastructure and fuel subsidies."
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "right",  
+    plot.caption = element_text(hjust = 0)) +
+    scale_color_brewer(palette = "Set2")  #
+
+ggsave("./4_plots/plot_trend_fed_revenue_alltaxes_taxtype_1panel.png",
+       plot = plot_trend_fed_revenue_alltaxes_taxtype_1panel)
 
 
 

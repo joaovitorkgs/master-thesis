@@ -127,7 +127,23 @@ df_federal_natjuridica <- read_sql(query_federal_natjuridica, billing_project_id
 
 # 2.2. Downloaded Files -- -----------------------------------------------------
 
-# State (Santa Catarian) 
+# Federal
+
+# Tax revenue per State
+
+url_state_sc_municipality <- "https://dados.sc.gov.br/dataset/0eaade9e-98b9-4887-865d-096ccf142f1b/resource/eec848ff-67db-4a8d-9bc6-101e8573c1e2/download/icms_ipva.csv"
+
+download.file(url      = url_state_sc_municipality,
+              destfile = "./1_raw_data/1_tax_revenue/2022_SC_tax_revenue_municipality.csv",
+              quite    = FALSE)
+
+df_state_sc_municipality <- read.csv("./1_raw_data/1_tax_revenue/2022_SC_tax_revenue_municipality.csv")
+
+
+
+
+
+# State (Santa Catarina) 
 
 # Tax revenue per Municipality
 
@@ -221,7 +237,7 @@ unique(df_federal_natjuridica$natureza_juridica_codigo_descricao)
 # based on this data frame.
 
 
-# 3.1.2 Data on tax revenue per economic sector of registered firms ------------
+# 3.1.3 Data on tax revenue per economic sector of registered firms ------------
 
 # Cleaning the original data set 
 
@@ -233,30 +249,71 @@ df_federal_cnae_date <- df_federal_cnae %>%
     ano_mes_date = as.Date(paste(ano, mes, "01", sep = "-")) # Create date column
   ) 
 
+# Selecting all fuels which are levied on fuel sales (as per Esteves, 2020, p.6)
 
-# Dataframes focusing on revenue from CIDE Combustivel only
+federal_cnae_fuel_alltaxes <- df_federal_cnae_date %>% 
+  select(ano_mes_date,           # Year and month
+         secao_sigla,            # Economic sector classification
+         imposto_importacao,     # Import tax
+         pis_pasep,              # Tax to fund social benefits
+         imposto_exportacao,     # Export tax
+         cofins,                 # Tax to fund social securite
+         cide_combustiveis) %>%  # Tax on fuel to fund infrastructure and fuel subsidies 
+  rename(ii = imposto_importacao,
+         ie = imposto_exportacao) %>% 
+  replace(is.na(.),0) %>% 
+  mutate(fuel_taxes = ii + pis_pasep + ie + cofins + cide_combustiveis)
+         
 
-federal_gasstation <- df_federal_cnae_date %>% 
+
+# Data frames for specific sectors (all federal taxes levied on fuel-related economic activities)
+
+federal_gasstation_fueltaxes <- federal_cnae_fuel_alltaxes %>% 
+  select(ano_mes_date, secao_sigla, fuel_taxes) %>%  # "cide_combustiveis" refers to a specific tax paid for fuel
+  filter(secao_sigla != "G") %>%  # Removing all registered companies not in the energy sector
+  group_by(ano_mes_date) %>% 
+  summarise(fuel_taxes = sum(fuel_taxes, na.rm = TRUE))
+
+federal_energysector_fueltaxes <- federal_cnae_fuel_alltaxes %>% 
+  select(ano_mes_date, secao_sigla, fuel_taxes) %>%  # "cide_combustiveis" refers to a specific tax paid for fuel
+  filter(secao_sigla != "D") %>%  # Removing all registered companies not in the energy sector
+  group_by(ano_mes_date) %>% 
+  summarise(fuel_taxes = sum(fuel_taxes, na.rm = TRUE))
+
+federal_allsectors_fueltaxes <- federal_cnae_fuel_alltaxes %>% 
+  select(ano_mes_date, secao_sigla, fuel_taxes) %>%  # "cide_combustiveis" refers to a specific tax paid for fuel
+  group_by(ano_mes_date, secao_sigla) %>% 
+  summarise(fuel_taxes = sum(fuel_taxes, na.rm = TRUE))
+
+federal_allsectors_fueltaxes <- federal_cnae_fuel_alltaxes %>% 
+  left_join(cnae_sector_names, by = "secao_sigla") %>% 
+  select(ano_mes_date, secao_sigla, sectors_en, fuel_taxes) %>% 
+  drop_na()
+
+
+# Data frames for specific sectors ("CIDE Combustíveis" only)
+
+federal_CIDE_gasstation <- df_federal_cnae_date %>% 
   select(ano_mes_date, ano, mes, secao_sigla, cide_combustiveis) %>%  # "cide_combustiveis" refers to a specific tax paid for fuel
   filter(secao_sigla != "G") %>%  # Removing all registered companies not in the energy sector
   mutate(cide_combustiveis = as.numeric(as.character(cide_combustiveis))) %>% 
   group_by(ano_mes_date) %>% 
   summarise(`CIDE Combustíveis` = sum(cide_combustiveis, na.rm = TRUE))
 
-federal_energysector <- df_federal_cnae_date %>% 
+federal_CIDE_energysector <- df_federal_cnae_date %>% 
   select(ano_mes_date, ano, mes, secao_sigla, cide_combustiveis) %>%  # "cide_combustiveis" refers to a specific tax paid for fuel
   filter(secao_sigla != "D") %>%  # Removing all registered companies not in the energy sector
   mutate(cide_combustiveis = as.numeric(as.character(cide_combustiveis))) %>% 
   group_by(ano_mes_date) %>% 
   summarise(`CIDE Combustíveis` = sum(cide_combustiveis, na.rm = TRUE))
 
-federal_fuel <- df_federal_cnae_date %>% 
+federal_CIDE_allsectors <- df_federal_cnae_date %>% 
   select(ano_mes_date, ano, mes, secao_sigla, cide_combustiveis) %>%  # "cide_combustiveis" refers to a specific tax paid for fuel
   mutate(cide_combustiveis = as.numeric(as.character(cide_combustiveis))) %>% 
   group_by(ano_mes_date, secao_sigla) %>% 
   summarise(`CIDE Combustíveis` = sum(cide_combustiveis, na.rm = TRUE))
 
-federal_fuel <- federal_fuel %>% 
+federal_CIDE_allsectors <- federal_CIDE_allsectors %>% 
   left_join(cnae_sector_names, by = "secao_sigla") %>% 
   select(ano_mes_date, secao_sigla, sectors_en, `CIDE Combustíveis`) %>% 
   drop_na()
@@ -268,11 +325,11 @@ federal_fuel <- federal_fuel %>%
 
 # 4.1. Federal Tax Revenue -----------------------------------------------------
 
-# 4.1.1. CIDE Combustiveis -----------------------------------------------------
+# 4.1.2. CIDE Combustiveis -----------------------------------------------------
 
 # Economic Sector D (Electricity and Gas)
 
-plot_trend_fed_revenue_cnae_electgas <- ggplot(federal_energysector, 
+plot_trend_fed_revenue_CIDE_electgas <- ggplot(federal_CIDE_energysector, 
                                                  aes(x = ano_mes_date, 
                                                      y = (`CIDE Combustíveis`)/1000000000)) +
   geom_line(linewidth = 1) +  # Line plot for each 'tipo_consumo'
@@ -290,14 +347,14 @@ plot_trend_fed_revenue_cnae_electgas <- ggplot(federal_energysector,
     axis.text.x = element_text(angle = 45, hjust = 1),  # Tilt x-axis labels
     plot.caption = element_text(hjust = 0))
 
-ggsave("./4_plots/plot_trend_fed_revenue_cnae_electgas.png",
-       plot = plot_trend_fed_revenue_cnae_electgas,
+ggsave("./4_plots/plot_trend_fed_revenue_CIDE_electgas.png",
+       plot = plot_trend_fed_revenue_CIDE_electgas,
        units = "in")
     
 
 # Economic Sector G (includes gas stations)
 
-plot_trend_fed_revenue_cnae_gasstation <- ggplot(federal_gasstation, 
+plot_trend_fed_revenue_CIDE_gasstation <- ggplot(federal_CIDE_gasstation, 
                                       aes(x = ano_mes_date, 
                                           y = (`CIDE Combustíveis`)/1000000000)) +
   geom_line(linewidth = 1) +  # Line plot for each 'tipo_consumo'
@@ -317,14 +374,14 @@ plot_trend_fed_revenue_cnae_gasstation <- ggplot(federal_gasstation,
                                
   )
 
-ggsave("./4_plots/plot_trend_fed_revenue_cnae_gasstation.png",
-       plot = plot_trend_fed_revenue_cnae_gasstation,
+ggsave("./4_plots/plot_trend_fed_revenue_CIDE_gasstation.png",
+       plot = plot_trend_fed_revenue_CIDE_gasstation,
        units = "in")
 
 
 # All sectors
 
-plot_trend_fed_revenue_cnae_groups <- ggplot(federal_fuel,
+plot_trend_fed_revenue_CIDE_groups <- ggplot(federal_CIDE_allsectors,
                                              aes(x = ano_mes_date, y = `CIDE Combustíveis`)) +
     geom_line(linewidth = 0.7) +
   theme_bw() +
@@ -343,8 +400,8 @@ plot_trend_fed_revenue_cnae_groups <- ggplot(federal_fuel,
   ) +
   facet_wrap(~ sectors_en, nrow = 6)
 
-ggsave("./4_plots/plot_trend_fed_revenue_cnae_groups.png",
-       plot = plot_trend_fed_revenue_cnae_groups,
+ggsave("./4_plots/plot_trend_fed_revenue_CIDE_groups.png",
+       plot = plot_trend_fed_revenue_CIDE_groups,
        units = "in",
        width = 10,
        height = 10)
@@ -355,25 +412,25 @@ ggsave("./4_plots/plot_trend_fed_revenue_cnae_groups.png",
 
 
 
-# 4.1.1. CIDE Combustiveis (up to 2023 only) -----------------------------------
+# 4.1.2. CIDE Combustiveis (up to 2023 only) -----------------------------------
 
 
 # Changing the data sets to remove values after January 2024 
 
-federal_energysector_23 <-  federal_energysector %>% 
+federal_CIDE_energysector_23 <-  federal_CIDE_energysector %>% 
   filter(ano_mes_date < as.Date(paste("2024", "01", "01", sep = "-")))
 
-federal_gasstation_23 <- federal_gasstation %>% 
+federal_CIDE_gasstation_23 <- federal_CIDE_gasstation %>% 
   filter(ano_mes_date < as.Date(paste("2024", "01", "01", sep = "-")))
 
-federal_fuel_23 <- federal_fuel %>% 
+federal_CIDE_allsectors_23 <- federal_CIDE_allsectors %>% 
   filter(ano_mes_date < as.Date(paste("2024", "01", "01", sep = "-")))
   
 
 
 # Economic Sector D (Electricity and Gas) up to December 2023
 
-plot_trend_fed_revenue_cnae_electgas_23 <- ggplot(federal_energysector_23, 
+plot_trend_fed_revenue_CIDE_electgas_23 <- ggplot(federal_CIDE_energysector_23, 
                                                aes(x = ano_mes_date, 
                                                    y = (`CIDE Combustíveis`)/1000000000)) +
   geom_line(linewidth = 1) +  # Line plot for each 'tipo_consumo'
@@ -391,14 +448,14 @@ plot_trend_fed_revenue_cnae_electgas_23 <- ggplot(federal_energysector_23,
     axis.text.x = element_text(angle = 45, hjust = 1),  # Tilt x-axis labels
     plot.caption = element_text(hjust = 0))
 
-ggsave("./4_plots/plot_trend_fed_revenue_cnae_electgas_23.png",
-       plot = plot_trend_fed_revenue_cnae_electgas_23,
+ggsave("./4_plots/plot_trend_fed_revenue_CIDE_electgas_23.png",
+       plot = plot_trend_fed_revenue_CIDE_electgas_23,
        units = "in")
 
 
 # Economic Sector G (includes gas stations) up to December 2023
 
-plot_trend_fed_revenue_cnae_gasstation_23 <- ggplot(federal_gasstation_23, 
+plot_trend_fed_revenue_CIDE_gasstation_23 <- ggplot(federal_CIDE_gasstation_23, 
                                                  aes(x = ano_mes_date, 
                                                      y = (`CIDE Combustíveis`)/1000000000)) +
   geom_line(linewidth = 1) +  # Line plot for each 'tipo_consumo'
@@ -418,14 +475,14 @@ plot_trend_fed_revenue_cnae_gasstation_23 <- ggplot(federal_gasstation_23,
     
   )
 
-ggsave("./4_plots/plot_trend_fed_revenue_cnae_gasstation_23.png",
-       plot = plot_trend_fed_revenue_cnae_gasstation_23,
+ggsave("./4_plots/plot_trend_fed_revenue_CIDE_gasstation_23.png",
+       plot = plot_trend_fed_revenue_CIDE_gasstation_23,
        units = "in")
 
 
 # All sectors up to December 2023
 
-plot_trend_fed_revenue_cnae_groups_23 <- ggplot(federal_fuel_23,
+plot_trend_fed_revenue_CIDE_groups_23 <- ggplot(federal_CIDE_allsectors_23,
                                              aes(x = ano_mes_date, y = `CIDE Combustíveis`)) +
   geom_line(linewidth = 0.7) +
   theme_bw() +
@@ -444,8 +501,8 @@ plot_trend_fed_revenue_cnae_groups_23 <- ggplot(federal_fuel_23,
   ) +
   facet_wrap(~ sectors_en, nrow = 6)
 
-ggsave("./4_plots/plot_trend_fed_revenue_cnae_groups_23.png",
-       plot = plot_trend_fed_revenue_cnae_groups_23,
+ggsave("./4_plots/plot_trend_fed_revenue_CIDE_groups_23.png",
+       plot = plot_trend_fed_revenue_CIDE_groups_23,
        units = "in",
        width = 10,
        height = 10)

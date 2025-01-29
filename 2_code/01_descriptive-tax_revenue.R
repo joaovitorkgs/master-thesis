@@ -225,6 +225,70 @@ cnae_sector_names <- data.frame(
 
 
 
+# Manual data on tax rates per state
+
+# Gasoline
+
+install.packages("data.table")
+
+tax_rates_gasoline <- data.frame(
+  State = c('AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
+               'MG', 'MS', 'MT', 'PA', 'PB', 'PE', 'PI', 'PR', 'RJ', 'RN',
+               'RO', 'RR', 'RS', 'SC', 'SE', 'SP', 'TO'),
+  CIDE_Gaso_A = rep(0.1, 27),
+  PIS_COFINS_Gaso_A = rep(0.7925, 27),
+  PIS_COFINS_AEAC = rep(0.1309, 27),
+  AEAC_Mistura = rep('27%', 27),
+  CIDE_PIS_COF_Gaso_C = rep(0.6869, 27),
+  ICMS = rep(1.47, 27),
+  Tributos_TOTAL = rep(2.157, 27)
+)
+
+tax_rates_ethanol <- data.frame(
+  Estado = c("AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", "MG", "MS", "MT*", "PA", "PB", "PE", "PI", "PR", "RJ", "RN", "RO", "RR", "RS", "SC", "SE", "SP", "TO"),
+  PIS_COFINS_produtor = rep(0.1309, 27),
+  PIS_COFINS_distribuidora = rep(0.1109, 27),
+  PIS_COFINS_etanol = rep(0.2418, 27),
+  ICMS_percent = c(19.00, 21.00, 20.00, 18.00, 12.86, 20.00, 13.00, 17.00, 14.17, 22.00, 13.08, 11.33, 17.00, 16.96, 15.33, 15.52, 14.90, 12.00, 16.87, 15.33, 17.50, 20.00, 17.00, 17.00, 19.00, 12.00, 20.00),
+  PMPF_01_02 = c(5.1203, 4.8097, 4.9639, 5.2900, 4.5900, 4.8696, 4.4000, 4.4095, 4.2630, 4.6300, 4.3529, 4.0526, 4.0601, 4.7045, 3.9832, 4.3800, 4.4000, 4.2766, 4.4900, 4.4500, 5.0870, 4.9500, 4.5116, 4.4471, 4.5410, 3.6700, 4.7400),
+  ICMS_total = c(0.9729, 1.0100, 0.9928, 0.9522, 0.5903, 0.9739, 0.5720, 0.7496, 0.6041, 1.0186, 0.5694, 0.4592, 0.3451, 0.7979, 0.6106, 0.6798, 0.6556, 0.5132, 0.7575, 0.6822, 0.8902, 0.9900, 0.7670, 0.7560, 0.8628, 0.4404, 0.9480),
+  Tributos_total = c(1.215, 1.252, 1.235, 1.194, 0.832, 1.216, 0.814, 0.991, 0.846, 1.260, 0.811, 0.701, 0.587, 1.040, 0.852, 0.922, 0.897, 0.755, 0.999, 0.924, 1.132, 1.232, 1.009, 0.998, 1.105, 0.682, 1.190)
+)
+
+tax_rates_diesel_S500 <- data.frame(
+  Estado = c("AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", "MG", "MS", "MT", "PA", "PB", "PE", "PI", "PR", "RJ", "RN", "RO", "RR", "RS", "SC", "SE", "SP", "TO"),
+  CIDE_Diesel_A = rep(0.0000, 27),
+  PIS_COFINS_biodiesel = rep(0.3515, 27),
+  biodiesel_mistura = rep(0.1480, 27),
+  biodiesel_mistura_percent = rep(14, 27),
+  cide_pis_cofins_diesel_S_500 = rep(0.3230, 27),
+  ICMS_Total = rep(1.1200, 27),
+  Tributos_Total = rep(1.443, 27)
+)
+
+tax_rates_diesel_S10 <- data.frame(
+  Estado = c("AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", "MG", "MS", "MT", "PA", "PB", "PE", "PI", "PR", "RJ", "RN", "RO", "RR", "RS", "SC", "SE", "SP", "TO"),
+  CIDE_Diesel_A = rep(0.0000, 27),
+  PIS_COFINS_biodiesel = rep(0.3515, 27),
+  biodiesel_mistura = rep(0.1480, 27),
+  biodiesel_mistura_percent = rep(14, 27),
+  cide_pis_cofins_diesel_S_10 = rep(0.3230, 27),
+  ICMS_Total = rep(1.1200, 27),
+  Tributos_Total = rep(1.443, 27)
+)
+
+tax_rates_gasoline_premium <- data.frame(
+  Estado = c("AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", "MG", "MS", "MT", "PA", "PB", "PE", "PI", "PR", "RJ", "RN", "RO", "RR", "RS", "SC", "SE", "SP", "TO"),
+  CIDE_GasoA_Pr = rep(0.1000, 27),
+  PIS_COFINS_GasoA_Pr = rep(0.7925, 27),
+  PIS_COFINS_AEAC = rep(0.1309, 27),
+  AEAC_Mistura_percent = rep(25, 27),
+  CIDE_PIS_COF_Gaso_A_Pr = rep(0.7021, 27),
+  ICMS_Total = rep(1.4700, 27),
+  Tributos_total = rep(2.172, 27)
+)
+
+
 
 # 3. Tax Revenue analysis ------------------------------------------------------
 

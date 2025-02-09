@@ -16,7 +16,8 @@ pacman::p_load(
   stringi,      # Advanced string manipulation (e.g., Unicode support)
   gt,           # Create beautiful tables for reporting results
   webshot2,     # Capture screenshots of web pages or save HTML widgets as images
-  RColorBrewer  # Additional color palettes for plotting
+  RColorBrewer, # Additional color palettes for plotting
+  httr
 )
 
 print("The packages have been successfully loaded.")

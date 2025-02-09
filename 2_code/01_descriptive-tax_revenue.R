@@ -141,8 +141,6 @@ df_state_sc_municipality <- read.csv("./1_raw_data/1_tax_revenue/2022_SC_tax_rev
 
 
 
-
-
 # State (Santa Catarina) 
 
 # Tax revenue per Municipality
@@ -229,10 +227,8 @@ cnae_sector_names <- data.frame(
 
 # Gasoline
 
-install.packages("data.table")
-
 tax_rates_gasoline <- data.frame(
-  State = c('AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
+  Estado = c('AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
                'MG', 'MS', 'MT', 'PA', 'PB', 'PE', 'PI', 'PR', 'RJ', 'RN',
                'RO', 'RR', 'RS', 'SC', 'SE', 'SP', 'TO'),
   CIDE_Gaso_A = rep(0.1, 27),
@@ -241,7 +237,7 @@ tax_rates_gasoline <- data.frame(
   AEAC_Mistura = rep('27%', 27),
   CIDE_PIS_COF_Gaso_C = rep(0.6869, 27),
   ICMS = rep(1.47, 27),
-  Tributos_TOTAL = rep(2.157, 27)
+  Total_Gaso_A = rep(2.157, 27)
 )
 
 tax_rates_ethanol <- data.frame(
@@ -252,7 +248,7 @@ tax_rates_ethanol <- data.frame(
   ICMS_percent = c(19.00, 21.00, 20.00, 18.00, 12.86, 20.00, 13.00, 17.00, 14.17, 22.00, 13.08, 11.33, 17.00, 16.96, 15.33, 15.52, 14.90, 12.00, 16.87, 15.33, 17.50, 20.00, 17.00, 17.00, 19.00, 12.00, 20.00),
   PMPF_01_02 = c(5.1203, 4.8097, 4.9639, 5.2900, 4.5900, 4.8696, 4.4000, 4.4095, 4.2630, 4.6300, 4.3529, 4.0526, 4.0601, 4.7045, 3.9832, 4.3800, 4.4000, 4.2766, 4.4900, 4.4500, 5.0870, 4.9500, 4.5116, 4.4471, 4.5410, 3.6700, 4.7400),
   ICMS_total = c(0.9729, 1.0100, 0.9928, 0.9522, 0.5903, 0.9739, 0.5720, 0.7496, 0.6041, 1.0186, 0.5694, 0.4592, 0.3451, 0.7979, 0.6106, 0.6798, 0.6556, 0.5132, 0.7575, 0.6822, 0.8902, 0.9900, 0.7670, 0.7560, 0.8628, 0.4404, 0.9480),
-  Tributos_total = c(1.215, 1.252, 1.235, 1.194, 0.832, 1.216, 0.814, 0.991, 0.846, 1.260, 0.811, 0.701, 0.587, 1.040, 0.852, 0.922, 0.897, 0.755, 0.999, 0.924, 1.132, 1.232, 1.009, 0.998, 1.105, 0.682, 1.190)
+  Total_Ethanol = c(1.215, 1.252, 1.235, 1.194, 0.832, 1.216, 0.814, 0.991, 0.846, 1.260, 0.811, 0.701, 0.587, 1.040, 0.852, 0.922, 0.897, 0.755, 0.999, 0.924, 1.132, 1.232, 1.009, 0.998, 1.105, 0.682, 1.190)
 )
 
 tax_rates_diesel_S500 <- data.frame(
@@ -263,7 +259,7 @@ tax_rates_diesel_S500 <- data.frame(
   biodiesel_mistura_percent = rep(14, 27),
   cide_pis_cofins_diesel_S_500 = rep(0.3230, 27),
   ICMS_Total = rep(1.1200, 27),
-  Tributos_Total = rep(1.443, 27)
+  Total_DieselS500 = rep(1.443, 27)
 )
 
 tax_rates_diesel_S10 <- data.frame(
@@ -274,7 +270,7 @@ tax_rates_diesel_S10 <- data.frame(
   biodiesel_mistura_percent = rep(14, 27),
   cide_pis_cofins_diesel_S_10 = rep(0.3230, 27),
   ICMS_Total = rep(1.1200, 27),
-  Tributos_Total = rep(1.443, 27)
+  Total_DieselS10 = rep(1.443, 27)
 )
 
 tax_rates_gasoline_premium <- data.frame(
@@ -285,8 +281,65 @@ tax_rates_gasoline_premium <- data.frame(
   AEAC_Mistura_percent = rep(25, 27),
   CIDE_PIS_COF_Gaso_A_Pr = rep(0.7021, 27),
   ICMS_Total = rep(1.4700, 27),
-  Tributos_total = rep(2.172, 27)
+  Total_Gaso_A_Pr = rep(2.172, 27)
 )
+
+value_gasoline <- tax_rates_gasoline %>% 
+  mutate(All = 1) %>% 
+  group_by(All) %>% 
+  summarise(
+    CIDE_Gaso_A        = mean(CIDE_Gaso_A),
+    PIS_COFINS_Gaso_A  = mean(PIS_COFINS_Gaso_A),
+    ICMS               = mean(ICMS))
+
+value_diesel <- tax_rates_diesel_S10 %>% 
+  mutate(All = 1) %>% 
+  group_by(All) %>% 
+  summarise(
+    CIDE_Diesel_A         = mean(CIDE_Diesel_A),
+    PIS_COFINS_biodiesel  = mean(PIS_COFINS_biodiesel),
+    ICMS                  = mean(ICMS_Total))
+
+value_ethanol <- tax_rates_ethanol %>% 
+  mutate(All = 1) %>% 
+  group_by(All) %>% 
+  summarise(
+    PIS_COFINS_etanol     = mean(PIS_COFINS_etanol),
+    ICMS                  = mean(ICMS_total))
+
+
+fuel_tax_data <- data.frame(
+  Fuel_Type = rep(c("Gasoline", "Diesel", "Ethanol"), each = 3),
+  Tax_Type = rep(c("Gasoline Tax", "Social Contributions", 
+                   "Tax on Circulation of Goods and Services"), 3),
+  Rate_BRL_per_L = c(0.100, 0.792, 1.470,
+                     0.000, 0.3515, 1.120,
+                     0.000, 0.242, 0.747))
+
+
+barplot_fuel_tax_rates <- ggplot(fuel_tax_data, aes(x = Rate_BRL_per_L, y = Tax_Type, fill = Fuel_Type)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = sprintf("%.3f", Rate_BRL_per_L)), 
+            position = position_dodge(width = 0.9),
+            hjust = -0.2,
+            size = 3) +  # Reduced text size here
+  labs(title = "Nominal value of tax paid on fuel sales",
+       subtitle = "Source: Brazilian National Federation of Fuel Retail (Fecombustiveis), 2025",
+       x = "Rate (BRL per L)",
+       y = "Tax Type",
+       fill = "Fuel Type") +
+  theme_minimal() +
+  scale_fill_manual(values = c("Diesel" = "#4E79A7", 
+                               "Ethanol" = "#F28E2B", 
+                               "Gasoline" = "#59A14F")) +
+  theme(legend.position = "right",
+        plot.title = element_text(hjust = 0),
+        plot.subtitle = element_text(hjust = 0),
+        plot.title.position = "plot") +
+  expand_limits(x = max(fuel_tax_data$Rate_BRL_per_L) * 1.2)
+
+ggsave("./4_plots/barplot_fuel_tax_rates.png",
+       plot = barplot_fuel_tax_rates)
 
 
 
@@ -327,19 +380,38 @@ federal_cnae_fuel_alltaxes <- df_federal_cnae_date %>%
 # Data frames for specific sectors (all federal taxes levied on fuel-related economic activities)
 
 federal_gasstation_fueltaxes <- federal_cnae_fuel_alltaxes %>% 
-  select(ano_mes_date, secao_sigla, fuel_taxes) %>%  # "cide_combustiveis" refers to a specific tax paid for fuel
-  filter(secao_sigla != "G") %>%  # Removing all registered companies not in the energy sector
+  select(ano_mes_date, secao_sigla, fuel_taxes) %>%  
+  filter(secao_sigla != "G") %>%  # Keeping only firms related to commercializing fuel
   group_by(ano_mes_date) %>% 
   summarise(fuel_taxes = sum(fuel_taxes, na.rm = TRUE))
 
+if (!file.exists("./3_processed_data/taxrev_federal_gasstation_fueltaxes.csv")) {
+  write_csv(federal_gasstation_fueltaxes,
+            file = "./3_processed_data/taxrev_federal_gasstation_fueltaxes.csv")
+} else {
+  print("File already exists in the repository")
+}
+
+
+
+
 federal_energysector_fueltaxes <- federal_cnae_fuel_alltaxes %>% 
-  select(ano_mes_date, secao_sigla, fuel_taxes) %>%  # "cide_combustiveis" refers to a specific tax paid for fuel
+  select(ano_mes_date, secao_sigla, fuel_taxes) %>%  
   filter(secao_sigla != "D") %>%  # Removing all registered companies not in the energy sector
   group_by(ano_mes_date) %>% 
   summarise(fuel_taxes = sum(fuel_taxes, na.rm = TRUE))
 
+
+if (!file.exists("./3_processed_data/taxrev_federal_energysector_fueltaxes.csv")) {
+  write_csv(federal_energysector_fueltaxes,
+            file = "./3_processed_data/taxrev_federal_energysector_fueltaxes.csv")
+} else {
+  print("File already exists in the repository")
+}
+
+
 federal_allsectors_fueltaxes <- federal_cnae_fuel_alltaxes %>% 
-  select(ano, ano_mes_date, secao_sigla, fuel_taxes) %>%  # "cide_combustiveis" refers to a specific tax paid for fuel
+  select(ano, ano_mes_date, secao_sigla, fuel_taxes) %>%  
   group_by(ano_mes_date, secao_sigla) %>% 
   summarise(fuel_taxes = sum(fuel_taxes, na.rm = TRUE))
 
@@ -347,6 +419,13 @@ federal_allsectors_fueltaxes <- federal_cnae_fuel_alltaxes %>%
   left_join(cnae_sector_names, by = "secao_sigla") %>% 
   select(ano_mes_date, secao_sigla, sectors_en, fuel_taxes) %>% 
   drop_na()
+
+if (!file.exists("./3_processed_data/taxrev_federal_allsectors_fueltaxes.csv")) {
+  write_csv(federal_allsectors_fueltaxes,
+            file = "./3_processed_data/taxrev_federal_allsectors_fueltaxes.csv")
+} else {
+  print("File already exists in the repository")
+}
 
 
 federal_allsectors_unpivot <- federal_cnae_fuel_alltaxes %>% 
@@ -375,6 +454,13 @@ federal_allsectors_unpivot <- federal_allsectors_unpivot %>%
     TRUE ~ tax_type # Keep original value if no match
   )) %>% 
   mutate(ano = as.Date(paste(ano, "01", "01", sep = "-")))
+
+if (!file.exists("./3_processed_data/taxrev_federal_allsectors_unpivot.csv")) {
+  write_csv(federal_allsectors_unpivot,
+            file = "./3_processed_data/taxrev_federal_allsectors_unpivot.csv")
+} else {
+  print("File already exists in the repository")
+}
 
 
 
@@ -467,6 +553,7 @@ plot_trend_fed_revenue_alltaxes_gasstation <- ggplot(federal_gasstation_fueltaxe
 ggsave("./4_plots/plot_trend_fed_revenue_alltaxes_gasstation.png",
        plot = plot_trend_fed_revenue_alltaxes_gasstation,
        units = "in")
+
 
 
 # All sectors

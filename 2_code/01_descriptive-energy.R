@@ -78,6 +78,13 @@ energy_aggregate_UF <- df_electricity_date %>%
   select(ano, ano_mes_date,sigla_uf,sigla_uf_nome,tipo_consumo,name_region,consumo,numero_consumidores,geom) %>% 
   rename(`Region Name` = name_region)
 
+if (!file.exists("./3_processed_data/energy_aggregate_UF.csv")) {
+  write_csv(energy_aggregate_UF,
+            file = "./3_processed_data/energy_aggregate_UF.csv")
+} else {
+  print("File already exists in the repository")
+}
+
 
 # Translation of region names
 energy_aggregate_UF <- energy_aggregate_UF %>%
@@ -94,6 +101,15 @@ energy_aggregate_all_UF <- energy_aggregate_UF %>%
   filter(tipo_consumo != ("Total")) %>% 
   group_by(ano_mes_date, tipo_consumo,`Region Name`) %>%
   summarise(total = sum(consumo))
+
+if (!file.exists("./3_processed_data/energy_aggregate_all_UF.csv")) {
+  write_csv(energy_aggregate_all_UF,
+            file = "./3_processed_data/energy_aggregate_all_UF.csv")
+} else {
+  print("File already exists in the repository")
+}
+
+
 
 energy_aggregate_total_UF <- energy_aggregate_UF %>%
   filter(tipo_consumo == ("Total")) %>% 

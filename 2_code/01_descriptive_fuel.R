@@ -2,7 +2,6 @@
 
 source("./2_code/00_packages.R")
 
-
 # 2. Raw dataframes ------------------------------------------------------------
 
 # 2.1. Gasoline  ---------------------------------------------------------------
@@ -51,6 +50,7 @@ download_and_combine_gasoline_data <- function(start_year = 2000, end_year = 202
   return(combined_data)
 }
 
+
 # Download all data on gasoline consumption using the function above
 gasoline_data_raw <- download_and_combine_gasoline_data() %>% 
   mutate(municipio = ifelse(is.na(Município), Municípios, Município)) %>% 
@@ -61,8 +61,8 @@ gasoline_data_raw <- download_and_combine_gasoline_data() %>%
 
 # Save data to a single xlsx file
 
-if (!file.exists("./3_processed_data/gasoline_data_raw.xlsx")) {
-  writexl::write_xlsx(gasoline_data_raw, "./3_processed_data/gasoline_data_raw.xlsx")
+if (!file.exists("./3_processed_data/fuel_raw_gasoline_data.xlsx")) {
+  writexl::write_xlsx(gasoline_data_raw, "./3_processed_data/fuel_raw_gasoline_data.xlsx")
   message("File saved successfully.")
 } else {
   message("File already exists. Skipping save operation.")
@@ -129,8 +129,8 @@ diesel_data_raw <- diesel_data_raw %>%
 
 # Save data to a single xlsx file
 
-if (!file.exists("./3_processed_data/diesel_data_raw.xlsx")) {
-  writexl::write_xlsx(diesel_data_raw, "./3_processed_data/diesel_data_raw.xlsx")
+if (!file.exists("./3_processed_data/fuel_raw_diesel_data_raw.xlsx")) {
+  writexl::write_xlsx(diesel_data_raw, "./3_processed_data/fuel_raw_diesel_data_raw.xlsx")
   message("File saved successfully.")
 } else {
   message("File already exists. Skipping save operation.")
@@ -195,13 +195,12 @@ ethanol_data_raw <- ethanol_data_raw %>%
 
 # Save data to a single xlsx file
 
-if (!file.exists("./3_processed_data/ethanol_data_raw.xlsx")) {
-  writexl::write_xlsx(ethanol_data_raw, "./3_processed_data/ethanol_data_raw.xlsx")
+if (!file.exists("./3_processed_data/fuel_raw_ethanol_data.xlsx")) {
+  writexl::write_xlsx(ethanol_data_raw, "./3_processed_data/fuel_raw_ethanol_data.xlsx")
   message("File saved successfully.")
 } else {
   message("File already exists. Skipping save operation.")
 }
-
 
 
 # 3. Summarised data frames ----------------------------------------------------

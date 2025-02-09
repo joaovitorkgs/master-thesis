@@ -83,6 +83,15 @@ electric_vehicles_per_state <- electric_vehicles_per_state %>%
          electric_vehicle_per_capita = total_electric_vehicles/total_pop)
 
 
+if (!file.exists("./3_processed_data/energy_aggregate_all_UF.csv")) {
+  write_csv(energy_aggregate_all_UF,
+            file = "./3_processed_data/energy_aggregate_all_UF.csv")
+} else {
+  print("File already exists in the repository")
+}
+
+
+
 # 4. Plots ---------------------------------------------------------------------
 
 ## 4.1. Maps -------------------------------------------------------------------

@@ -227,6 +227,14 @@ yearly_results_aggregate <- fleet_analysis_results %>%
   mutate(Share_electric = Electric/Total,
          Share_hybrid   = Hybrid/Total)
 
+if (!file.exists("./3_processed_data/fleet_yearly_state_wide.csv")) {
+  write_csv(yearly_results_aggregate,
+            file = "./3_processed_data/fleet_yearly_state_wide.csv")
+} else {
+  print("File already exists in the repository")
+}
+
+
 # Observations per state
 yearly_results_state <- fleet_analysis_results %>% 
   drop_na() %>% 
@@ -238,6 +246,15 @@ yearly_results_state <- fleet_analysis_results %>%
   mutate(Share_electric = Electric/Total,
          Share_hybrid   = Hybrid/Total) 
 
+if (!file.exists("./3_processed_data/fleet_yearly_state_long.csv")) {
+  write_csv(yearly_results_state,
+            file = "./3_processed_data/fleet_yearly_state_long.csv")
+} else {
+  print("File already exists in the repository")
+}
+
+
+
 # Pivoted table per category
 yearly_results_agg_long <- yearly_results_aggregate %>% 
   select(year,Electric, Hybrid,Other) %>% 
@@ -246,6 +263,14 @@ yearly_results_agg_long <- yearly_results_aggregate %>%
     names_to  = "Category",
     values_to = "Count"
   )
+
+if (!file.exists("./3_processed_data/fleet_yearly_agg_long.csv")) {
+  write_csv(yearly_results_agg_long,
+            file = "./3_processed_data/fleet_yearly_agg_long.csv")
+} else {
+  print("File already exists in the repository")
+}
+
 
 
 # 3.3 Line plots to check trends in data ---------------------------------------

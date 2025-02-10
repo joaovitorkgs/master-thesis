@@ -17,8 +17,12 @@ pacman::p_load(
   gt,           # Create beautiful tables for reporting results
   webshot2,     # Capture screenshots of web pages or save HTML widgets as images
   RColorBrewer, # Additional color palettes for plotting
-  httr
+  httr,
+  Metrics,
+  caret
 )
+
+
 
 print("The packages have been successfully loaded.")
 

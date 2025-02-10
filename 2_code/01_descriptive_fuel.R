@@ -61,13 +61,12 @@ gasoline_data_raw <- download_and_combine_gasoline_data() %>%
 
 # Save data to a single xlsx file
 
-if (!file.exists("./3_processed_data/fuel_raw_gasoline_data.xlsx")) {
-  writexl::write_xlsx(gasoline_data_raw, "./3_processed_data/fuel_raw_gasoline_data.xlsx")
-  message("File saved successfully.")
+if (!file.exists("./1_raw_data/4_fuel_consumption/fuel_raw_gasoline_data.csv")) {
+  write_csv(pop_data_MS,
+            file = "./1_raw_data/4_fuel_consumption/fuel_raw_gasoline_data.csv")
 } else {
-  message("File already exists. Skipping save operation.")
+  print("File already exists in the repository")
 }
-
 
 # 2.2. Diesel  -----------------------------------------------------------------
 
@@ -129,13 +128,12 @@ diesel_data_raw <- diesel_data_raw %>%
 
 # Save data to a single xlsx file
 
-if (!file.exists("./3_processed_data/fuel_raw_diesel_data_raw.xlsx")) {
-  writexl::write_xlsx(diesel_data_raw, "./3_processed_data/fuel_raw_diesel_data_raw.xlsx")
-  message("File saved successfully.")
+if (!file.exists("./1_raw_data/4_fuel_consumption/fuel_raw_diesel_data_raw.csv")) {
+  write_csv(diesel_data_raw,
+            file = "./1_raw_data/4_fuel_consumption/fuel_raw_diesel_data_raw.csv")
 } else {
-  message("File already exists. Skipping save operation.")
+  print("File already exists in the repository")
 }
-
 
 # 2.3. Ethanol  ----------------------------------------------------------------
 
@@ -195,11 +193,11 @@ ethanol_data_raw <- ethanol_data_raw %>%
 
 # Save data to a single xlsx file
 
-if (!file.exists("./3_processed_data/fuel_raw_ethanol_data.xlsx")) {
-  writexl::write_xlsx(ethanol_data_raw, "./3_processed_data/fuel_raw_ethanol_data.xlsx")
-  message("File saved successfully.")
+if (!file.exists("./1_raw_data/4_fuel_consumption/fuel_raw_ethanol_data.csv")) {
+  write_csv(ethanol_data_raw,
+            file = "./1_raw_data/4_fuel_consumption/fuel_raw_ethanol_data.csv")
 } else {
-  message("File already exists. Skipping save operation.")
+  print("File already exists in the repository")
 }
 
 
@@ -225,6 +223,28 @@ ethanol_summary <- ethanol_data_raw %>%
 
 
 all_fuels_summary <- bind_rows(gasoline_summary,diesel_summary,ethanol_summary)
+
+if (!file.exists("./3_processed_data/fuel_yearly_agg_data_long.csv")) {
+  write_csv(all_fuels_summary,
+            file = "./3_processed_data/fuel_yearly_agg_data_long.csv")
+} else {
+  print("File already exists in the repository")
+}
+
+
+all_fuels_summary_wide <- all_fuels_summary %>%
+  pivot_wider(
+    names_from = fuel,
+    values_from = total
+  )
+
+if (!file.exists("./3_processed_data/fuel_yearly_agg_data_wide.csv")) {
+  write_csv(all_fuels_summary_wide,
+            file = "./3_processed_data/fuel_yearly_agg_data_wide.csv")
+} else {
+  print("File already exists in the repository")
+}
+
 
 
 # 4. Plots ---------------------------------------------------------------------

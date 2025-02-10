@@ -23,7 +23,9 @@ fleet_df_nov24 <- read_excel("1_raw_data/2_vehicle_fleet/2024-11_D_Frota_por_UF_
 # 2.2. Files from packages -----------------------------------------------------
 
 # State data with geographical coordinates
+
 state_df <- geobr::read_state(year = 2020,showProgress = FALSE) 
+
 
 
 # 2.3. Files from BigQuery ----------------------------------------------------
@@ -35,25 +37,65 @@ source("./2_code/01_descriptive-demographics.R")
 
 # 3.1 Vehicle fleet (total/electric) -------------------------------------------
 
+create_electric_vehicles_dfs <- function(fleet_dfs) {
+  electric_vehicles_dfs <- list()
+  
+  for (year in 2013:2024) {
+    fleet_df <- fleet_dfs[[paste0("fleet_df_nov", substr(as.character(year), 3, 4))]]
+    
+    # Aggregate municipal data in state level
+    fleet_state <- fleet_df %>% 
+      group_by(UF, `Combustível Veículo`) %>%
+      summarize(Total = sum(`Qtd. Veículos`), .groups = "drop")
+    
+    # Data frame of total vehicles per state
+    vehicles_per_state <- fleet_state %>%
+      group_by(UF) %>%
+      summarise(total_vehicles = sum(Total))
+    
+    # Filter electric vehicles and creating a new variable for % of electric or hybrid vehicles
+    electric_vehicles_per_state <- fleet_state %>%
+      filter(grepl("^ELETRICO", `Combustível Veículo`)) %>%
+      group_by(UF) %>%
+      summarise(total_electric_vehicles = sum(Total)) %>% 
+      left_join(vehicles_per_state, by = "UF") %>% 
+      mutate(percentage = scales::percent(total_electric_vehicles/total_vehicles, accuracy = 0.01)) %>% 
+      filter(UF != "Sem Informação") %>% 
+      mutate(year = year)
+    
+    electric_vehicles_dfs[[paste0("electric_vehicles_per_state_", year)]] <- electric_vehicles_per_state
+  }
+  
+  return(electric_vehicles_dfs)
+}
 
-# Aggregate municipal data in state level
-fleet_state <- fleet_df_nov24 %>% 
-  group_by(UF,`Combustível Veículo`) %>%  # Grouping by kind of fuel used
-  summarize(Total = sum(`Qtd. Veículos`))
+fleet_dfs <- list(
+  fleet_df_nov13 = fleet_df_nov13,
+  fleet_df_nov14 = fleet_df_nov14,
+  fleet_df_nov15 = fleet_df_nov15,
+  fleet_df_nov16 = fleet_df_nov16,
+  fleet_df_nov17 = fleet_df_nov17,
+  fleet_df_nov18 = fleet_df_nov18,
+  fleet_df_nov19 = fleet_df_nov19,
+  fleet_df_nov20 = fleet_df_nov20,
+  fleet_df_nov21 = fleet_df_nov21,
+  fleet_df_nov22 = fleet_df_nov22,
+  fleet_df_nov23 = fleet_df_nov23,
+  fleet_df_nov24 = fleet_df_nov24
+  )
 
-# Data frame of total vehicles per state
-vehicles_per_state <- fleet_state %>%
-  group_by(UF) %>%
-  summarise(total_vehicles = sum(Total))
+# Saving dataframes in a single list
+all_electric_vehicles_dfs <- create_electric_vehicles_dfs(fleet_dfs)
 
-# Filter electric vehicles and creating a new variable for % of electric or hybrid vehicles
-electric_vehicles_per_state <- fleet_state %>%
-  filter(grepl("^ELETRICO", `Combustível Veículo`)) %>%
-  group_by(UF) %>%
-  summarise(total_electric_vehicles = sum(Total)) %>% 
-  left_join(vehicles_per_state, by = "UF") %>% 
-  mutate(percentage = scales::percent(total_electric_vehicles/total_vehicles, accuracy = 0.01)) %>% 
-  filter(UF != "Sem Informação")
+
+fleet_electric_vehicles_all_years <- bind_rows(all_electric_vehicles_dfs)
+
+
+
+
+
+# 3.1 Vehicle fleet (total/electric) -------------------------------------------
+
 
 # Create a string to use as common key to join the data frames
 state_df$UF <- state_df$name_state %>%
@@ -61,12 +103,20 @@ state_df$UF <- state_df$name_state %>%
   toupper()
 
 # Join electric vehicle df with geographic info on the states
-electric_vehicles_per_state <- electric_vehicles_per_state %>% 
+fleet_electric_vehicles_all_years <- fleet_electric_vehicles_all_years %>% 
   left_join(state_df, by = "UF") %>% 
-  select(code_state, abbrev_state, name_state, code_region, name_region, geom, total_electric_vehicles, total_vehicles, percentage) 
+  select(code_state, abbrev_state, name_state, code_region, name_region, geom, total_electric_vehicles, total_vehicles, percentage, year) 
 
 # Update variable name
-electric_vehicles_per_state$name_state <- tolower(electric_vehicles_per_state$name_state)
+fleet_electric_vehicles_all_years$name_state <- tolower(fleet_electric_vehicles_all_years$name_state)
+
+
+if (!file.exists("./3_processed_data/fleet_electric_vehicles_all_years.csv")) {
+  write_csv(fleet_electric_vehicles_all_years,
+            file = "./3_processed_data/fleet_electric_vehicles_all_years.csv")
+} else {
+  print("File already exists in the repository")
+}
 
 
 # Adding State population to the data frame
@@ -75,7 +125,8 @@ state_pop <- pop_city %>%
   summarize(total_pop = sum(populacao)) %>% 
   rename(abbrev_state = sigla_uf)
 
-electric_vehicles_per_state <- electric_vehicles_per_state %>% 
+electric_vehicles_per_state <- fleet_electric_vehicles_all_years %>% 
+  filter(year == 2022) %>% 
   left_join(state_pop, by = "abbrev_state")
 
 electric_vehicles_per_state <- electric_vehicles_per_state %>% 
@@ -83,12 +134,13 @@ electric_vehicles_per_state <- electric_vehicles_per_state %>%
          electric_vehicle_per_capita = total_electric_vehicles/total_pop)
 
 
-if (!file.exists("./3_processed_data/energy_aggregate_all_UF.csv")) {
-  write_csv(energy_aggregate_all_UF,
-            file = "./3_processed_data/energy_aggregate_all_UF.csv")
+if (!file.exists("./3_processed_data/fleet_electric_vehicles_per_state_23.csv")) {
+  write_csv(electric_vehicles_per_state,
+            file = "./3_processed_data/fleet_electric_vehicles_per_state_23.csv")
 } else {
   print("File already exists in the repository")
 }
+
 
 
 

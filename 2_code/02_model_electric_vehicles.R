@@ -1,6 +1,8 @@
 # 1. Packages ------------------------------------------------------------------
 
 source("./2_code/00_packages.R")
+setwd("C:/Users/joaov/Dropbox/R Assignments/master-thesis")
+
 
 # 2. Importing processed dataframes---------------------------------------------
 
@@ -40,7 +42,13 @@ df_all <- df_fleet %>%
 # 4. Analysis ------------------------------------------------------------------
 
 install.packages("Metrics")
+
+install.packages("sparsevctrs")
+install.packages("hardhat")
+install.packages("recipes")
 install.packages("caret")
+
+
 library(Metrics)
 library(caret)
 
@@ -57,19 +65,6 @@ set.seed(123)
 train_index <- createDataPartition(df_all$electric, p = 0.8, list = FALSE)
 train_data <- combined_data[train_index, ]
 test_data <- combined_data[-train_index, ]
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

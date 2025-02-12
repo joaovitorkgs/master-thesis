@@ -4,7 +4,7 @@ source("./2_code/00_packages.R")
 
 # 2. Loading data sets ---------------------------------------------------------
 
-# 2.1. Files from BigQuery -----------------------------------------------------
+## 2.1. Files from BigQuery -----------------------------------------------------
 
 # Para carregar o dado direto no R
 query_fleet <- "
@@ -31,10 +31,10 @@ if (!file.exists("./1_raw_data/2_vehicle_fleet/fleet_bd_all_data_raw_df.csv")) {
 }
 
 
-# 2.2. Scraping data online ----------------------------------------------------
-# 2.2.1. Monthly Fleet 
 
-# 2024 -------------------------------------------------------------------------
+## 2.2. Scraping data online ----------------------------------------------------
+### 2.2.1. Monthly Fleet --------------------------------------------------------
+#### 2024 -------------------------------------------------------------------------
 
 "https://www.gov.br/transportes/pt-br/assuntos/transito/conteudo-Senatran/D_Frota_por_UF_Municipio_COMBUSTIVEL_Dezembro_20241.xlsx"
 "https://www.gov.br/transportes/pt-br/assuntos/transito/conteudo-Senatran/D_Frota_por_UF_Municipio_COMBUSTIVEL_Novembro_2024.xlsx"
@@ -116,7 +116,7 @@ if (!file.exists("./1_raw_data/2_vehicle_fleet/fleet_2024_fuel.csv")) {
   print("File already exists in the repository")
 }
 
-# 2023 -------------------------------------------------------------------------
+#### 2023 -------------------------------------------------------------------------
 
 download_and_process_23_xlsx <- function(base_url, months, year) {
   month_map <- c("janeiro" = 1, "fevereiro" = 2, "marco" = 3, "abril" = 4, "maio" = 5, "junho" = 6,
@@ -185,7 +185,7 @@ if (!file.exists("./1_raw_data/2_vehicle_fleet/fleet_2023_fuel.csv")) {
 }
 
 
-# 2022 -------------------------------------------------------------------------
+#### 2022 -------------------------------------------------------------------------
 
 download_and_process_22_xlsx <- function(base_url, months, year) {
   month_map <- c("janeiro" = 1, "fevereiro" = 2, "marco" = 3, "abril" = 4, "maio" = 5, "junho" = 6,
@@ -249,3 +249,47 @@ if (!file.exists("./1_raw_data/2_vehicle_fleet/fleet_2022_fuel.csv")) {
 } else {
   print("File already exists in the repository")
 }
+
+
+#### 2021 ------------------------------------------------------------------------
+
+download_and_process_21_xlsx <- function(base_url, months, year) {
+  month_map <- c("janeiro" = 1, "fevereiro" = 2, "marco" = 3, "abril" = 4, "maio" = 5, "junho" = 6,
+                 "julho" = 7, "agosto" = 8, "setembro" = 9, "outubro" = 10, "novembro" = 11, "dezembro" = 12)
+  
+  all_dataframes <- list()
+  
+  for (month in months) {
+    url <- paste0(base_url, year, "/", month, "/d_frota_por_uf_municipio_combustivel_", tolower(month), "_", year, ".xlsx")
+    
+    temp_file <- tempfile(fileext = ".xlsx")
+    tryCatch({
+      download.file(url, temp_file, mode = "wb")
+      
+      df <- read_excel(temp_file)
+      
+      df <- df %>%
+        mutate(month = month_map[month],
+               year = as.numeric(year),
+               date = make_date(year, month_map[month], 1))
+      
+      df_name <- paste0("frota_", year, "_", sprintf("%02d", month_map[month]))
+      
+      assign(df_name, df, envir = .GlobalEnv)
+      
+      all_dataframes[[df_name]] <- df
+      
+      cat("Processed:", df_name, "\n")
+    }, error = function(e) {
+      cat("Failed to process:", url, "\nError:", e$message, "\n")
+    })
+    
+    unlink(temp_file)
+  }
+}
+
+base_url <- "https://www.gov.br/transportes/pt-br/assuntos/transito/arquivos-senatran/estatisticas/renavam/"
+months <- c("dezembro", "novembro", "outubro", "setembro", "agosto", "julho", "junho", "maio", "abril", "marco", "fevereiro", "janeiro")
+year <- "2021"
+
+download_and_process_21_xlsx(base_url, months, year)

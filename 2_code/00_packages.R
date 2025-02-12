@@ -19,7 +19,9 @@ pacman::p_load(
   RColorBrewer, # Additional color palettes for plotting
   httr,
   Metrics,
-  caret
+  caret,
+  unrar,
+  archive
 )
 
 print("The packages have been successfully loaded.")

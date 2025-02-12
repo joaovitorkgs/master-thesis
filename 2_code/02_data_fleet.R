@@ -293,3 +293,490 @@ months <- c("dezembro", "novembro", "outubro", "setembro", "agosto", "julho", "j
 year <- "2021"
 
 download_and_process_21_xlsx(base_url, months, year)
+
+frota_2021_all <- frota_2021_01 %>% 
+  bind_rows(
+    frota_2021_02,
+    frota_2021_03,
+    frota_2021_04,
+    frota_2021_05,
+    frota_2021_06,
+    frota_2021_07,
+    frota_2021_08,
+    frota_2021_09,
+    frota_2021_10,
+    frota_2021_11,
+    frota_2021_12)
+
+
+if (!file.exists("./1_raw_data/2_vehicle_fleet/fleet_2021_fuel.csv")) {
+  write_csv(frota_2021_all,
+            file = "./1_raw_data/2_vehicle_fleet/fleet_2021_fuel.csv")
+} else {
+  print("File already exists in the repository")
+}
+
+#### 2020 ------------------------------------------------------------------------
+
+download_and_process_20_xlsx <- function(months, year) {
+  month_map <- c("janeiro" = 1, "fevereiro" = 2, "marco" = 3, "abril" = 4, "maio" = 5, "junho" = 6,
+                 "julho" = 7, "agosto" = 8, "setembro" = 9, "outubro" = 10, "novembro" = 11, "dezembro" = 12)
+  
+  all_dataframes <- list()
+  
+  for (month in months) {
+    if (month_map[month] <= 5) {
+      base_url <- "https://www.gov.br/transportes/pt-br/centrais-de-conteudo/"
+      url <- paste0(base_url, "d-frota-por-uf-municipio-combustivel-", tolower(month), "-", year, "-xlsx")
+    } else {
+      base_url <- "https://www.gov.br/transportes/pt-br/assuntos/transito/arquivos-senatran/estatisticas/renavam/"
+      url <- paste0(base_url, year, "/", tolower(month), "/d_frota_por_uf_municipio_combustivel_", tolower(month), "_", year, ".xlsx")
+    }
+    
+    temp_file <- tempfile(fileext = ".xlsx")
+    tryCatch({
+      download.file(url, temp_file, mode = "wb")
+      
+      df <- readxl::read_excel(temp_file)
+      
+      df <- df %>%
+        dplyr::mutate(month = month_map[month],
+                      year = as.numeric(year),
+                      date = lubridate::make_date(year, month_map[month], 1))
+      
+      df_name <- paste0("frota_", year, "_", sprintf("%02d", month_map[month]))
+      
+      assign(df_name, df, envir = .GlobalEnv)
+      
+      all_dataframes[[df_name]] <- df
+      
+      cat("Processed:", df_name, "\n")
+    }, error = function(e) {
+      cat("Failed to process:", url, "\nError:", e$message, "\n")
+    })
+    
+    unlink(temp_file)
+  }
+}
+
+months <- c("dezembro", "novembro", "outubro", "setembro", "agosto", "julho", "junho", "maio", "abril", "marco", "fevereiro", "janeiro")
+year <- "2020"
+
+download_and_process_20_xlsx(months, year)
+
+
+frota_2020_all <- frota_2020_01 %>% 
+  bind_rows(
+    frota_2020_02,
+    frota_2020_03,
+    frota_2020_04,
+    frota_2020_05,
+    frota_2020_06,
+    frota_2020_07,
+    frota_2020_08,
+    frota_2020_09,
+    frota_2020_10,
+    frota_2020_11,
+    frota_2020_12)
+
+
+if (!file.exists("./1_raw_data/2_vehicle_fleet/fleet_2020_fuel.csv")) {
+  write_csv(frota_2020_all,
+            file = "./1_raw_data/2_vehicle_fleet/fleet_2020_fuel.csv")
+} else {
+  print("File already exists in the repository")
+}
+
+#### 2019 ------------------------------------------------------------------------
+
+download_and_process_19_xlsx <- function(base_url, months, year) {
+  month_map <- c("janeito" = 1, "fevereiro" = 2, "marco" = 3, "abril" = 4, "maio" = 5, "junho" = 6,
+                 "julho" = 7, "agosto" = 8, "setembro" = 9, "outubro" = 10, "novembro" = 11, "dezembro" = 12)
+  
+  all_dataframes <- list()
+  
+  for (month in months) {
+    url <- paste0(base_url, year, "/", month, "/d_frota_por_uf_municipio_combustivel_", tolower(month), "_", year, ".xlsx")
+    
+    temp_file <- tempfile(fileext = ".xlsx")
+    tryCatch({
+      download.file(url, temp_file, mode = "wb")
+      
+      df <- read_excel(temp_file)
+      
+      df <- df %>%
+        mutate(month = month_map[month],
+               year = as.numeric(year),
+               date = make_date(year, month_map[month], 1))
+      
+      df_name <- paste0("frota_", year, "_", sprintf("%02d", month_map[month]))
+      
+      assign(df_name, df, envir = .GlobalEnv)
+      
+      all_dataframes[[df_name]] <- df
+      
+      cat("Processed:", df_name, "\n")
+    }, error = function(e) {
+      cat("Failed to process:", url, "\nError:", e$message, "\n")
+    })
+    
+    unlink(temp_file)
+  }
+}
+
+base_url <- "https://www.gov.br/transportes/pt-br/assuntos/transito/arquivos-senatran/estatisticas/renavam/"
+months <- c("dezembro", "novembro", "outubro", "setembro", "agosto", "julho", "junho", "maio", "abril", "marco", "fevereiro", "janeito")
+year <- "2019"
+
+download_and_process_19_xlsx(base_url, months, year)
+
+# Typo in the file name; it was easier to download it manually and import it 
+frota_2019_01 <- read_excel("1_raw_data/2_vehicle_fleet/2019-01-d_frota_por_uf_municipio_combustivel_janeito_2019.xlsx")
+
+frota_2019_01 <- frota_2019_01 %>% 
+  mutate(month = 1,
+         year = 2019,
+         date = make_date(2019,1,1))
+
+
+frota_2019_all <- frota_2019_01 %>% 
+  bind_rows(
+    frota_2019_02,
+    frota_2019_03,
+    frota_2019_04,
+    frota_2019_05,
+    frota_2019_06,
+    frota_2019_07,
+    frota_2019_08,
+    frota_2019_09,
+    frota_2019_10,
+    frota_2019_11,
+    frota_2019_12)
+
+
+if (!file.exists("./1_raw_data/2_vehicle_fleet/fleet_2019_fuel.csv")) {
+  write_csv(frota_2019_all,
+            file = "./1_raw_data/2_vehicle_fleet/fleet_2019_fuel.csv")
+} else {
+  print("File already exists in the repository")
+}
+
+
+#### 2018 ------------------------------------------------------------------------
+
+download_and_process_18_xlsx <- function(base_url, months, year) {
+  month_map <- c("janeiro" = 1, "fevereiro" = 2, "marco" = 3, "abril" = 4, "maio" = 5, "junho" = 6,
+                 "julho" = 7, "agosto" = 8, "setembro" = 9, "outubro" = 10, "novembro" = 11, "dezembro" = 12)
+  
+  all_dataframes <- list()
+  
+  for (month in months) {
+    url <- paste0(base_url, year, "/", month, "/d_frota_por_uf_municipio_combustivel_", tolower(month), "_", year, ".xlsx")
+    
+    temp_file <- tempfile(fileext = ".xlsx")
+    tryCatch({
+      download.file(url, temp_file, mode = "wb")
+      
+      df <- read_excel(temp_file)
+      
+      df <- df %>%
+        mutate(month = month_map[month],
+               year = as.numeric(year),
+               date = make_date(year, month_map[month], 1))
+      
+      df_name <- paste0("frota_", year, "_", sprintf("%02d", month_map[month]))
+      
+      assign(df_name, df, envir = .GlobalEnv)
+      
+      all_dataframes[[df_name]] <- df
+      
+      cat("Processed:", df_name, "\n")
+    }, error = function(e) {
+      cat("Failed to process:", url, "\nError:", e$message, "\n")
+    })
+    
+    unlink(temp_file)
+  }
+}
+
+base_url <- "https://www.gov.br/transportes/pt-br/assuntos/transito/arquivos-senatran/estatisticas/renavam/"
+months <- c("dezembro", "novembro", "outubro", "setembro", "agosto", "julho", "junho", "maio", "abril", "marco", "fevereiro", "janeiro")
+year <- "2018"
+
+download_and_process_18_xlsx(base_url, months, year)
+
+
+# Manual importing due to inconsistent file names
+
+frota_2018_01 <- read_excel("1_raw_data/2_vehicle_fleet/2018_01_frota_por_uf_municipio_combustivel_jan_18.xlsx") %>% 
+  mutate(month = 1,
+         year = 2018,
+         date = make_date(2018,1,1))
+
+frota_2018_02 <- read_excel("1_raw_data/2_vehicle_fleet/2018_02_frota_por_uf_municipio_combustivel_fev_18.xlsx") %>% 
+  mutate(month = 2,
+         year = 2018,
+         date = make_date(2018,2,1))
+
+frota_2018_03 <- read_excel("1_raw_data/2_vehicle_fleet/2018_03_frota_por_uf_municipio_combustivel_mar_18.xlsx") %>% 
+  mutate(month = 3,
+         year = 2018,
+         date = make_date(2018,3,1))
+
+frota_2018_04 <- read_excel("1_raw_data/2_vehicle_fleet/2018_04_d_frota_por_uf_municipio_combustivel_abr_2018.xlsx") %>% 
+  mutate(month = 4,
+         year = 2018,
+         date = make_date(2018,4,1))
+
+frota_2018_05 <- read_excel("1_raw_data/2_vehicle_fleet/2018_05_d_frota_por_uf_municipio_combustivel_mai_2018.xlsx") %>% 
+  mutate(month = 5,
+         year = 2018,
+         date = make_date(2018,6,1))
+
+frota_2018_06 <- read_excel("1_raw_data/2_vehicle_fleet/2018_06_d_frota_por_uf_municipio_combustivel_jun_2018.xlsx") %>% 
+  mutate(month = 6,
+         year = 2018,
+         date = make_date(2018,6,1))
+
+frota_2018_all <- frota_2018_01 %>% 
+  bind_rows(
+    frota_2018_02,
+    frota_2018_03,
+    frota_2018_04,
+    frota_2018_05,
+    frota_2018_06,
+    frota_2018_07,
+    frota_2018_08,
+    frota_2018_09,
+    frota_2018_10,
+    frota_2018_11,
+    frota_2018_12)
+
+
+if (!file.exists("./1_raw_data/2_vehicle_fleet/fleet_2018_fuel.csv")) {
+  write_csv(frota_2018_all,
+            file = "./1_raw_data/2_vehicle_fleet/fleet_2018_fuel.csv")
+} else {
+  print("File already exists in the repository")
+}
+
+
+#### 2017 ------------------------------------------------------------------------
+
+download_and_process_17_xlsx <- function(months, year) {
+  month_map <- c("janeiro" = 1, "fevereiro" = 2, "marco" = 3, "abril" = 4, "maio" = 5, "junho" = 6,
+                 "julho" = 7, "agosto" = 8, "setembro" = 9, "outubro" = 10, "novembro" = 11, "dezembro" = 12)
+  
+  month_abbr <- c("jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez")
+  names(month_abbr) <- names(month_map)
+  
+  year_short <- substr(year, 3, 4)
+  
+  all_dataframes <- list()
+  
+  for (month in months) {
+    if (month_map[month] <= 6) {
+      base_url <- "https://www.gov.br/transportes/pt-br/assuntos/transito/arquivos-senatran/estatisticas/renavam/"
+      url <- paste0(base_url, year, "/", tolower(month), "/3_-_combustivel_-_", tolower(month), "_-_", year, ".xlsx")
+    } else {
+      base_url <- "https://www.gov.br/transportes/pt-br/assuntos/transito/arquivos-senatran/estatisticas/renavam/"
+      url <- paste0(base_url, year, "/", tolower(month), "/frota_por_uf_municipio_combustivel_", month_abbr[month], "_", year_short, ".xlsx")
+    }
+    
+    temp_file <- tempfile(fileext = ".xlsx")
+    tryCatch({
+      download.file(url, temp_file, mode = "wb")
+      
+      df <- readxl::read_excel(temp_file)
+      
+      df <- df %>%
+        dplyr::mutate(month = month_map[month],
+                      year = as.numeric(year),
+                      date = lubridate::make_date(year, month_map[month], 1))
+      
+      df_name <- paste0("frota_", year, "_", sprintf("%02d", month_map[month]))
+      
+      assign(df_name, df, envir = .GlobalEnv)
+      
+      all_dataframes[[df_name]] <- df
+      
+      cat("Processed:", df_name, "\n")
+    }, error = function(e) {
+      cat("Failed to process:", url, "\nError:", e$message, "\n")
+    })
+    
+    unlink(temp_file)
+  }
+}
+
+months <- c("dezembro", "novembro", "outubro", "setembro", "agosto", "julho", "junho", "maio", "abril", "marco", "fevereiro", "janeiro")
+year <- "2017"
+
+download_and_process_17_xlsx(months, year)
+
+# Manual importing due to inconsistent file names
+
+frota_2017_01 <- read_excel("1_raw_data/2_vehicle_fleet/2017_01_3_-_combustivel_-janeiro_-_2017.xlsx") %>% 
+  mutate(month = 1,
+         year = 2017,
+         date = make_date(2017,1,1))
+
+
+frota_2017_all <- frota_2017_01 %>% 
+  bind_rows(
+    frota_2017_02,
+    frota_2017_03,
+    frota_2017_04,
+    frota_2017_05,
+    frota_2017_06,
+    frota_2017_07,
+    frota_2017_08,
+    frota_2017_09,
+    frota_2017_10,
+    frota_2017_11,
+    frota_2017_12)
+
+
+if (!file.exists("./1_raw_data/2_vehicle_fleet/fleet_2017_fuel.csv")) {
+  write_csv(frota_2017_all,
+            file = "./1_raw_data/2_vehicle_fleet/fleet_2017_fuel.csv")
+} else {
+  print("File already exists in the repository")
+}
+
+#### 2016 ------------------------------------------------------------------------
+
+# Manual importing due to inconsistent file names and formats (.rar)
+
+frota_2016_01 <- read_excel("1_raw_data/2_vehicle_fleet/2016_01_3_Frota_Por_UF_Municipio_Combustivel_JAN_2016.xlsx") %>% 
+  mutate(month = 1,
+         year = 2016,
+         date = make_date(2016,1,1))
+
+frota_2016_02 <- read_excel("1_raw_data/2_vehicle_fleet/2016_02_3_Frota_Por_UF_Municipio_Combustivel_FEV_2016.xlsx") %>% 
+  mutate(month = 1,
+         year = 2016,
+         date = make_date(2016,2,1))
+
+frota_2016_03 <- read_excel("1_raw_data/2_vehicle_fleet/2016_03_3_Frota_Por_UF_Municipio_Combustivel_MAR_2016.xlsx") %>% 
+  mutate(month = 1,
+         year = 2016,
+         date = make_date(2016,3,1))
+
+frota_2016_04 <- read_excel("1_raw_data/2_vehicle_fleet/2016_04_3_Frota_Por_UF_Municipio_Combustivel_ABR_2016.xlsx") %>% 
+  mutate(month = 1,
+         year = 2016,
+         date = make_date(2016,4,1))
+
+frota_2016_05 <- read_excel("1_raw_data/2_vehicle_fleet/2016_05_3_Frota_Por_UF_Municipio_Combustivel_MAI_2016.xlsx") %>% 
+  mutate(month = 1,
+         year = 2016,
+         date = make_date(2016,5,1))
+
+frota_2016_06 <- read_excel("1_raw_data/2_vehicle_fleet/2016_06_3_Frota_Por_UF_Municipio_Combustivel_JUN_2016.xlsx") %>% 
+  mutate(month = 1,
+         year = 2016,
+         date = make_date(2016,6,1))
+
+frota_2016_07 <- read_excel("1_raw_data/2_vehicle_fleet/2016_07_3_Frota_Por_UF_Municipio_Combustivel_JUL_2016.xlsx") %>% 
+  mutate(month = 1,
+         year = 2016,
+         date = make_date(2016,7,1))
+
+frota_2016_08 <- read_excel("1_raw_data/2_vehicle_fleet/2016_08_3_Frota_Por_UF_Municipio_Combustivel_AGO_2016.xlsx") %>% 
+  mutate(month = 1,
+         year = 2016,
+         date = make_date(2016,8,1))
+
+frota_2016_09 <- read_excel("1_raw_data/2_vehicle_fleet/2016_09_3_Frota_Por_UF_Municipio_Combustivel_SET_2016.xlsx") %>% 
+  mutate(month = 1,
+         year = 2016,
+         date = make_date(2016,9,1))
+
+frota_2016_10 <- read_excel("1_raw_data/2_vehicle_fleet/2016_10_3_Frota_Por_UF_Municipio_Combustivel_OUT_2016.xlsx") %>% 
+  mutate(month = 1,
+         year = 2016,
+         date = make_date(2016,10,1))
+
+frota_2016_11 <- read_excel("1_raw_data/2_vehicle_fleet/2016_11_3_-_combustivel_-novembro_-2016 (1).xlsx") %>% 
+  mutate(month = 1,
+         year = 2016,
+         date = make_date(2016,11,1))
+
+frota_2016_12 <- read_excel("1_raw_data/2_vehicle_fleet/2016_12_3_frota_por_uf_municipio_combustivel_dez_2016 (1).xlsx") %>% 
+  mutate(month = 1,
+         year = 2016,
+         date = make_date(2016,12,1))
+
+
+
+frota_2016_all <- frota_2016_01 %>% 
+  bind_rows(
+    frota_2016_02,
+    frota_2016_03,
+    frota_2016_04,
+    frota_2016_05,
+    frota_2016_06,
+    frota_2016_07,
+    frota_2016_08,
+    frota_2016_09,
+    frota_2016_10,
+    frota_2016_11,
+    frota_2016_12)
+
+
+if (!file.exists("./1_raw_data/2_vehicle_fleet/fleet_2016_fuel.csv")) {
+  write_csv(frota_2016_all,
+            file = "./1_raw_data/2_vehicle_fleet/fleet_2016_fuel.csv")
+} else {
+  print("File already exists in the repository")
+}
+
+#### 2015 ------------------------------------------------------------------------
+
+# Manual importing due to inconsistent file names and formats (.rar)
+
+read_and_process_frota <- function(year) {
+  months <- c("JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ")
+  
+  for (i in 1:12) {
+    month_abbr <- months[i]
+    file_year <- ifelse(i <= 8, year + 1, year)
+    
+    file_name <- sprintf("1_raw_data/2_vehicle_fleet/%d_%02d_3_Frota_Por_UF_Municipio_Combustivel_%s_%d.xlsx",
+                         file_year, i, month_abbr, file_year)
+    
+    df <- read_excel(file_name) %>%
+      mutate(month = i,
+             year = year,
+             date = make_date(year, i, 1))
+    
+    assign(sprintf("frota_%d_%02d", year, i), df, envir = .GlobalEnv)
+  }
+}
+
+read_and_process_frota(2015)
+
+
+frota_2015_all <- frota_2015_01 %>% 
+  bind_rows(
+    frota_2015_02,
+    frota_2015_03,
+    frota_2015_04,
+    frota_2015_05,
+    frota_2015_06,
+    frota_2015_07,
+    frota_2015_08,
+    frota_2015_09,
+    frota_2015_10,
+    frota_2015_11,
+    frota_2015_12)
+
+
+
+if (!file.exists("./1_raw_data/2_vehicle_fleet/fleet_2015_fuel.csv")) {
+  write_csv(frota_2015_all,
+            file = "./1_raw_data/2_vehicle_fleet/fleet_2015_fuel.csv")
+} else {
+  print("File already exists in the repository")
+}

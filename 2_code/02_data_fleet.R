@@ -6,9 +6,10 @@ source("./2_code/00_packages.R")
 
 ## 2.1. Files from BigQuery -----------------------------------------------------
 
-# Para carregar o dado direto no R
-query_fleet <- "
-SELECT
+if (!file.exists("./1_raw_data/2_vehicle_fleet/fleet_bd_all_data_raw_df.csv")) {
+  
+  query_fleet <- "
+  SELECT
     dados.ano as ano,
     dados.mes as mes,
     dados.sigla_uf as sigla_uf,
@@ -16,20 +17,16 @@ SELECT
     diretorio_id_municipio.nome AS id_municipio_nome,
     dados.tipo_veiculo as tipo_veiculo,
     dados.quantidade as quantidade
-FROM `basedosdados.br_denatran_frota.municipio_tipo` AS dados
-LEFT JOIN (SELECT DISTINCT id_municipio,nome  FROM `basedosdados.br_bd_diretorios_brasil.municipio`) AS diretorio_id_municipio
-    ON dados.id_municipio = diretorio_id_municipio.id_municipio
-"
-
-fleet_raw_df <- read_sql(query_fleet, billing_project_id = get_billing_id())
-
-if (!file.exists("./1_raw_data/2_vehicle_fleet/fleet_bd_all_data_raw_df.csv")) {
+    FROM `basedosdados.br_denatran_frota.municipio_tipo` AS dados
+    LEFT JOIN (SELECT DISTINCT id_municipio,nome  FROM `basedosdados.br_bd_diretorios_brasil.municipio`) AS diretorio_id_municipio
+    ON dados.id_municipio = diretorio_id_municipio.id_municipio"
+  
+  fleet_raw_df <- read_sql(query_fleet, billing_project_id = get_billing_id())
   write_csv(fleet_raw_df,
             file = "./1_raw_data/2_vehicle_fleet/fleet_bd_all_data_raw_df.csv")
 } else {
   print("File already exists in the repository")
 }
-
 
 
 ## 2.2. Scraping data online ----------------------------------------------------
@@ -932,15 +929,30 @@ convert_and_clean_column <- function(data, column) {
 
 frota_2013_05 <- convert_and_clean_column(frota_2013_05, "QT VEICULOS")
 
-frota_2013_all <- frota_2013_05 %>% 
+
+standardize_column_names <- function(data) {
+  # Define the standard column names
+  standard_names <- c("UF", "municipality", "fuel", "total", "month", "year", "date")
+  
+  # Rename the columns of the data frame
+  colnames(data) <- standard_names
+  
+  return(data)
+}
+
+
+frota_2013_all <- frota_2013_05 %>%
+  standardize_column_names() %>%
   bind_rows(
-    frota_2013_06,
-    frota_2013_07,
-    frota_2013_08,
-    frota_2013_09,
-    frota_2013_10,
-    frota_2013_11,
-    frota_2013_12)
+    frota_2013_06 %>% standardize_column_names(),
+    frota_2013_07 %>% standardize_column_names(),
+    frota_2013_08 %>% standardize_column_names(),
+    frota_2013_09 %>% standardize_column_names(),
+    frota_2013_10 %>% standardize_column_names(),
+    frota_2013_11 %>% standardize_column_names(),
+    frota_2013_12 %>% standardize_column_names()
+  )
+
 
 
 if (!file.exists("./1_raw_data/2_vehicle_fleet/fleet_2013_fuel.csv")) {
@@ -949,4 +961,6 @@ if (!file.exists("./1_raw_data/2_vehicle_fleet/fleet_2013_fuel.csv")) {
 } else {
   print("File already exists in the repository")
 }
+
+
 

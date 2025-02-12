@@ -1,8 +1,6 @@
 # 1. Packages ------------------------------------------------------------------
 
 source("./2_code/00_packages.R")
-setwd("C:/Users/joaov/Dropbox/R Assignments/master-thesis")
-
 
 # 2. Importing processed dataframes---------------------------------------------
 

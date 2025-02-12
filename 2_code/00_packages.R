@@ -22,8 +22,6 @@ pacman::p_load(
   caret
 )
 
-
-
 print("The packages have been successfully loaded.")
 
 

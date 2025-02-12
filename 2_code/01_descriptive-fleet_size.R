@@ -27,6 +27,12 @@ state_df <- geobr::read_state(year = 2020,showProgress = FALSE)
 
 
 
+(25*12*10)
+
+
+
+
+
 # 2.3. Files from BigQuery ----------------------------------------------------
 
 source("./2_code/01_descriptive-demographics.R")

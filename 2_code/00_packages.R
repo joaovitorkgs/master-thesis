@@ -20,7 +20,6 @@ pacman::p_load(
   httr,
   Metrics,
   caret,
-  unrar,
   archive
 )
 

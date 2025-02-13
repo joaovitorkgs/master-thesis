@@ -1402,7 +1402,7 @@ if (!file.exists("./1_raw_data/2_vehicle_fleet/fleet_2013_fuel.csv")) {
 
 
 
-## 2.3. Combining data as one dataframe ----------------------------------------
+## 2.3. Combining data as one data frame ---------------------------------------
 
 frota_2013_2024 <- frota_2013_all %>% 
   bind_rows(

@@ -427,13 +427,72 @@ year <- "2019"
 
 download_and_process_19_xlsx(base_url, months, year)
 
-# Typo in the file name; it was easier to download it manually and import it 
-frota_2019_01 <- read_excel("1_raw_data/2_vehicle_fleet/2019-01-d_frota_por_uf_municipio_combustivel_janeito_2019.xlsx")
-
-frota_2019_01 <- frota_2019_01 %>% 
+# Typo in the file name; downloaded it manually and imported it 
+frota_2019_01 <- read_excel("1_raw_data/2_vehicle_fleet/2019-01-d_frota_por_uf_municipio_combustivel_janeito_2019.xlsx") %>% 
   mutate(month = 1,
          year = 2019,
          date = make_date(2019,1,1))
+
+# Function to rename columns
+rename_columns <- function(data) {
+  # Rename columns and return the modified data frame
+  data <- data %>% 
+    rename(UF    = 1,
+           city  = 2,
+           fuel  = 3,
+           total = 4,
+           month = 5,
+           year  = 6,
+           date = 7)
+  return(data) # Ensure the renamed data frame is returned
+}
+
+
+# Loop through months and rename columns for each data frame
+for (i in 1:12) {
+  # Construct the name of the data frame dynamically
+  if (i < 10) {
+    df_name <- paste("frota_", year,"_0", i, sep = "") # e.g., "frota_2019_01"
+  } else {
+    df_name <- paste("frota_", year,"_", i, sep = "") # e.g., "frota_2019_10"
+  }
+  
+  # Check if the object exists in the global environment
+  if (exists(df_name)) {
+    # Get the data frame object dynamically
+    df <- get(df_name)
+    
+    # Rename columns using the rename_columns function
+    df <- rename_columns(df)
+    
+    # Assign the modified data frame back to its original name
+    assign(df_name, df, envir = .GlobalEnv)
+    
+    cat("Renamed columns for:", df_name, "\n")
+  } else {
+    cat("Data frame does not exist:", df_name, "\n")
+  }
+}
+
+compare_df_cols(
+  frota_2019_02,
+  frota_2019_03,
+  frota_2019_04,
+  frota_2019_05,
+  frota_2019_06,
+  frota_2019_07,
+  frota_2019_08,
+  frota_2019_09,
+  frota_2019_10,
+  frota_2019_11,
+  frota_2019_12)
+
+# Fixing column type and changing NAs for 0
+frota_2019_08$total <- as.numeric(frota_2019_08$total)
+frota_2019_08$total[is.na(frota_2019_08$total)] <- 0
+
+frota_2019_09$total <- as.numeric(frota_2019_09$total)
+frota_2019_09$total[is.na(frota_2019_09$total)] <- 0
 
 
 frota_2019_all <- frota_2019_01 %>% 
@@ -535,19 +594,83 @@ frota_2018_06 <- read_excel("1_raw_data/2_vehicle_fleet/2018_06_d_frota_por_uf_m
          year = 2018,
          date = make_date(2018,6,1))
 
-frota_2018_all <- frota_2018_01 %>% 
-  bind_rows(
-    frota_2018_02,
-    frota_2018_03,
-    frota_2018_04,
-    frota_2018_05,
-    frota_2018_06,
-    frota_2018_07,
-    frota_2018_08,
-    frota_2018_09,
-    frota_2018_10,
-    frota_2018_11,
-    frota_2018_12)
+
+# Function to rename columns
+rename_columns <- function(data) {
+  # Rename columns and return the modified data frame
+  data <- data %>% 
+    rename(UF    = 1,
+           city  = 2,
+           fuel  = 3,
+           total = 4,
+           month = 5,
+           year  = 6,
+           date = 7)
+  return(data) # Ensure the renamed data frame is returned
+}
+
+
+# Loop through months and rename columns for each data frame
+for (i in 1:12) {
+  # Construct the name of the data frame dynamically
+  if (i < 10) {
+    df_name <- paste("frota_", year,"_0", i, sep = "") # e.g., "frota_2019_01"
+  } else {
+    df_name <- paste("frota_", year,"_", i, sep = "") # e.g., "frota_2019_10"
+  }
+  
+  # Check if the object exists in the global environment
+  if (exists(df_name)) {
+    # Get the data frame object dynamically
+    df <- get(df_name)
+    
+    # Rename columns using the rename_columns function
+    df <- rename_columns(df)
+    
+    # Assign the modified data frame back to its original name
+    assign(df_name, df, envir = .GlobalEnv)
+    
+    cat("Renamed columns for:", df_name, "\n")
+  } else {
+    cat("Data frame does not exist:", df_name, "\n")
+  }
+}
+
+compare_df_cols(
+  get(paste("frota_", year, "_01", sep = "")),
+  get(paste("frota_", year, "_02", sep = "")),
+  get(paste("frota_", year, "_03", sep = "")),
+  get(paste("frota_", year, "_04", sep = "")),
+  get(paste("frota_", year, "_05", sep = "")),
+  get(paste("frota_", year, "_06", sep = "")),
+  get(paste("frota_", year, "_07", sep = "")),
+  get(paste("frota_", year, "_08", sep = "")),
+  get(paste("frota_", year, "_09", sep = "")),
+  get(paste("frota_", year, "_10", sep = "")),
+  get(paste("frota_", year, "_11", sep = "")),
+  get(paste("frota_", year, "_12", sep = "")))
+  
+
+# Fixing column type and changing NAs for 0
+frota_2019_08$total <- as.numeric(frota_2019_08$total)
+frota_2019_08$total[is.na(frota_2019_08$total)] <- 0
+
+frota_2019_09$total <- as.numeric(frota_2019_09$total)
+frota_2019_09$total[is.na(frota_2019_09$total)] <- 0
+
+
+frota_2018_all <- get(paste("frota_", year, "_01", sep = "")) %>% 
+  bind_rows(get(paste("frota_", year, "_02", sep = "")),
+            get(paste("frota_", year, "_03", sep = "")),
+            get(paste("frota_", year, "_04", sep = "")),
+            get(paste("frota_", year, "_05", sep = "")),
+            get(paste("frota_", year, "_06", sep = "")),
+            get(paste("frota_", year, "_07", sep = "")),
+            get(paste("frota_", year, "_08", sep = "")),
+            get(paste("frota_", year, "_09", sep = "")),
+            get(paste("frota_", year, "_10", sep = "")),
+            get(paste("frota_", year, "_11", sep = "")),
+            get(paste("frota_", year, "_12", sep = "")))
 
 
 if (!file.exists("./1_raw_data/2_vehicle_fleet/fleet_2018_fuel.csv")) {
@@ -854,19 +977,60 @@ frota_2014_08 <- read_excel("1_raw_data/2_vehicle_fleet/2014_08_3_frotaporufmuni
          date = make_date(2014,1,1))
 
 
+# Loop through months and rename columns for each data frame
+for (i in 1:12) {
+  # Construct the name of the data frame dynamically
+  if (i < 10) {
+    df_name <- paste("frota_2014_0", i, sep = "") # e.g., "frota_2014_01"
+  } else {
+    df_name <- paste("frota_2014_", i, sep = "") # e.g., "frota_2014_10"
+  }
+  
+  # Check if the object exists in the global environment
+  if (exists(df_name)) {
+    # Get the data frame object dynamically
+    df <- get(df_name)
+    
+    # Rename columns using the rename_columns function
+    df <- rename_columns(df)
+    
+    # Assign the modified data frame back to its original name
+    assign(df_name, df, envir = .GlobalEnv)
+    
+    cat("Renamed columns for:", df_name, "\n")
+  } else {
+    cat("Data frame does not exist:", df_name, "\n")
+  }
+}
+
+
+compare_df_cols(
+  frota_2014_02,
+  frota_2014_03,
+  frota_2014_04,
+  frota_2014_05,
+  frota_2014_06,
+  frota_2014_07,
+  frota_2014_08,
+  frota_2014_09,
+  frota_2014_10,
+  frota_2014_11,
+  frota_2014_12)
+
+
 frota_2014_all <- frota_2014_01 %>% 
   bind_rows(
-    frota_2014_02,
-    frota_2014_03,
-    frota_2014_04,
-    frota_2014_05,
-    frota_2014_06,
-    frota_2014_07,
-    frota_2014_08,
-    frota_2014_09,
-    frota_2014_10,
-    frota_2014_11,
-    frota_2014_12)
+  frota_2014_02,
+  frota_2014_03,
+  frota_2014_04,
+  frota_2014_05,
+  frota_2014_06,
+  frota_2014_07,
+  frota_2014_08,
+  frota_2014_09,
+  frota_2014_10,
+  frota_2014_11,
+  frota_2014_12)
 
 
 if (!file.exists("./1_raw_data/2_vehicle_fleet/fleet_2014_fuel.csv")) {
@@ -875,8 +1039,6 @@ if (!file.exists("./1_raw_data/2_vehicle_fleet/fleet_2014_fuel.csv")) {
 } else {
   print("File already exists in the repository")
 }
-
-
 
 
 #### 2013 ------------------------------------------------------------------------

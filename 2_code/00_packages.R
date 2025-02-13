@@ -20,7 +20,8 @@ pacman::p_load(
   httr,
   Metrics,
   caret,
-  archive
+  archive,
+  janitor
 )
 
 print("The packages have been successfully loaded.")

@@ -125,5 +125,27 @@ if (!file.exists(  "./3_processed_data/fleet_2013_2024_id_clean.csv")) {
 
 ## 4. Exploring the data -------------------------------------------------------
 
-ggplot(fleet_2013_2024_clean_id, aes(x=electric, y=populacao)) + 
+# Correlation between population and electric vehicles
+
+fleet_2022_ev <- fleet_2013_2024_clean_id %>% 
+  mutate(ev_per_capita = electric/populacao) %>% 
+  filter(year == 2022) %>% 
+  group_by(year, id_municipio) %>% 
+  summarize(ev_per_capita = mean(ev_per_capita),
+            population    = mean(populacao))
+
+ggplot(fleet_2022_ev, aes(x=log(ev_per_capita), y=log(population))) + 
+  geom_point()
+
+
+# Correlation between population and number of vehicles
+
+fleet_2022_all <- fleet_2013_2024_clean_id %>% 
+  mutate(cars_per_capita = (diesel+ethanol+gasoline+other+electric)/populacao) %>% 
+  filter(year == 2022) %>% 
+  group_by(year, id_municipio) %>% 
+  summarize(cars_per_capita = mean(cars_per_capita),
+            population    = mean(populacao))
+
+ggplot(fleet_2022_all, aes(x=cars_per_capita, y=log(population))) + 
   geom_point()

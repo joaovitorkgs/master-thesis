@@ -1,5 +1,6 @@
 # 1. Packages ------------------------------------------------------------------
 
+setwd("C:/Users/joaov/Dropbox/R Assignments/master-thesis")
 source("./2_code/00_packages.R")
 
 # 2. Loading data sets ---------------------------------------------------------
@@ -29,28 +30,17 @@ fleet_2013_2024_clean <- fleet_2013_2024 %>%
   )
 
 
+if (!file.exists("./1_raw_data/2_vehicle_fleet/fleet_2013_2024_clean.csv")) {
+  write_csv(fleet_2013_2024_clean,
+            file = "./1_raw_data/2_vehicle_fleet/fleet_2013_2024_clean.csv")
+} else {
+  print("File already exists in the repository")
+}
+
+
+
 
 # 4. Data Exploration ----------------------------------------------------------
 
-
-plot1 <- ggplot(fleet_2013_2024, aes(x = fuel, y = total)) +
-  geom_point(alpha = 0.5, color = "darkgreen") +
-  labs(
-    title = "Total Vehicles by Fuel Type",
-    x = "Fuel Type",
-    y = "Total Vehicles"
-  ) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-
-plot2 <- ggplot(fleet_2013_2024_clean, aes(x = year, y = electric)) +
-  geom_point(alpha = 0.7, color = "orange") +
-  labs(
-    title = "Electric Vehicles Over Time",
-    x = "Year",
-    y = "Number of Electric Vehicles"
-  ) +
-  theme_minimal()
 
 

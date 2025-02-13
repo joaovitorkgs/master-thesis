@@ -4,7 +4,7 @@ source("./2_code/00_packages.R")
 
 # 2. Loading data sets ---------------------------------------------------------
 
-## 2.1. Files from BigQuery -----------------------------------------------------
+## 2.1. Files from BigQuery ----------------------------------------------------
 
 if (!file.exists("./1_raw_data/2_vehicle_fleet/fleet_bd_all_data_raw_df.csv")) {
   
@@ -440,6 +440,9 @@ for (i in 1:12) {
     cat("Data frame does not exist:", df_name, "\n")
   }
 }
+
+# Correcting distorted values in one specific month in the data series
+frota_2021_11$total <- frota_2021_11$total/10
 
 frota_2021_all <- frota_2021_01 %>% 
   bind_rows(

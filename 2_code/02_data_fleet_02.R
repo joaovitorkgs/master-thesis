@@ -43,4 +43,20 @@ if (!file.exists("./1_raw_data/2_vehicle_fleet/fleet_2013_2024_clean.csv")) {
 # 4. Data Exploration ----------------------------------------------------------
 
 
+plot_df <- fleet_2013_2024_clean %>% 
+  group_by(year) %>% 
+  summarize(electric = sum(electric),
+            gasoline = sum(gasoline),
+            ethanol  = sum(ethanol))
+
+ggplot(plot_df, aes(x = as.integer(year), y = electric)) +
+  geom_line(color = "#69b3a2", linewidth = 2) +
+  theme_bw()+
+  scale_x_continuous(breaks = seq(2013, 2024, by = 1)) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(
+    x = "Year",
+    y = "Number of Registered Vehicles",
+    title = "Evolution of Electric Vehicles in Brazil",
+    subtitle = "Source: National Traffic Secretariat, 2024")
 

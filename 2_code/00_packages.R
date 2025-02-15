@@ -21,7 +21,9 @@ pacman::p_load(
   Metrics,
   caret,
   archive,
-  janitor
+  janitor,
+  stargazer,
+  plm
 )
 
 print("The packages have been successfully loaded.")

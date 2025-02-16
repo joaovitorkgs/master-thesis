@@ -41,8 +41,10 @@ pacman::p_load(
   archive,      # Extract files from compressed archives (.zip, .tar.gz)
   
   # Specialized Packages
-  plm           # Perform panel data analysis (fixed/random effects models)
+  plm,          # Perform panel data analysis (fixed/random effects models)
+  deflateBr     # Deflate nominal Brazilian Reais using price indexes
 )
+
 
 print("The packages have been successfully loaded.")
 

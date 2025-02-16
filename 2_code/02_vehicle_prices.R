@@ -51,7 +51,11 @@ fipe_price_clean_en <- fipe_price_13_22_df %>%
          priceNominal   = valor,
          priceDeflated  = def_price
          ) %>% 
-  select(manufacturer, model,yearModel,monthReference,yearReference,priceNominal,priceDeflated)
+  select(manufacturer, model, fuel,
+         date,
+         yearModel,
+         monthReference,yearReference,
+         priceNominal,priceDeflated)
 
 if (!file.exists(  "./3_processed_data/fipe_price_clean_en.csv")) {
   write_csv(fipe_price_clean_df,
@@ -152,7 +156,6 @@ fipe_price_gasoline_trend <- fipe_price_13_22_df %>%
 years <- tibble(anoReferencia = 2013:2024)
 
 #### Combined df with all fuels  -----------------------------------------------
-
 ##### Nominal values -----------------------------------------------------------
 
 # Calculate trends for all fuel types (nominal value)
@@ -213,6 +216,88 @@ fipe_price_trends_deflated <- fipe_price_13_22_df %>%
   filter(anoReferencia < 2023)
 
 
+
+### 3.3.2. Monthly trends ------------------------------------------------------
+
+#### Individual dfs per fuel type ----------------------------------------------
+
+fipe_price_ev_trend_m <- fipe_price_13_22_df %>% 
+  filter(electric == 1) %>% 
+  select(codigoFipe:valor,def_price) %>% 
+  mutate(date = lubridate::as_date(paste(anoReferencia, mesReferencia,"01", sep=""))) %>% 
+  group_by(date) %>%
+  summarize(avg_price_e     = mean(valor),
+            avg_price_e_def = mean(def_price),
+            med_price_e     = median(valor),
+            med_price_e_def = median(def_price),
+            min_price_e     = min(valor),
+            min_price_e_def = min(def_price),
+            max_price_e     = max(valor),
+            nr_models_e     = n())
+
+fipe_price_gasoline_trend_m <- fipe_price_13_22_df %>% 
+  filter(gasoline == 1) %>% 
+  select(codigoFipe:valor,def_price) %>% 
+  mutate(date = lubridate::as_date(paste(anoReferencia, mesReferencia,"01", sep=""))) %>% 
+  group_by(date) %>%
+  summarize(avg_price_e     = mean(valor),
+            avg_price_e_def = mean(def_price),
+            med_price_e     = median(valor),
+            med_price_e_def = median(def_price),
+            min_price_e     = min(valor),
+            min_price_e_def = min(def_price),
+            max_price_e     = max(valor),
+            nr_models_e     = n())
+
+fipe_price_hybrid_trend_m <- fipe_price_13_22_df %>% 
+  filter(hybrid_ethanol == 1) %>% 
+  select(codigoFipe:valor,def_price) %>% 
+  mutate(date = lubridate::as_date(paste(anoReferencia, mesReferencia,"01", sep=""))) %>% 
+  group_by(date) %>%
+  summarize(avg_price_e     = mean(valor),
+            avg_price_e_def = mean(def_price),
+            med_price_e     = median(valor),
+            med_price_e_def = median(def_price),
+            min_price_e     = min(valor),
+            min_price_e_def = min(def_price),
+            max_price_e     = max(valor),
+            nr_models_e     = n())
+
+
+#### Combined df with all fuels  -----------------------------------------------
+
+fipe_price_monthly_trends_deflated <- fipe_price_13_22_df %>%
+  mutate(
+    date = as_date(paste(anoReferencia, str_pad(mesReferencia, 2, pad = "0"), "01", sep = "-"))
+  ) %>%
+  group_by(date, fuel_type = case_when(
+    electric == 1 ~ "electric",
+    hybrid_ethanol == 1 ~ "hybrid",
+    gasoline == 1 ~ "gasoline",
+  )) %>%
+  drop_na() %>% 
+  summarize(
+    mean_price   = mean(def_price, na.rm = TRUE),
+    median_price = min (def_price, na.rm = TRUE),
+    min_price    = min (def_price, na.rm = TRUE),
+    max_price    = max (def_price, na.rm = TRUE),
+    nr_models = n(),
+    .groups = "drop"
+  ) %>%
+  pivot_wider(
+    names_from = fuel_type,
+    values_from = c(mean_price, median_price, min_price, max_price, nr_models),
+    names_glue = "{.value}_{fuel_type}"
+  )
+
+
+if (!file.exists(  "./3_processed_data/fipe_price_monthly_trends_deflated.csv")) {
+  write_csv(fipe_price_monthly_trends_deflated,
+            file = "./3_processed_data/fipe_price_monthly_trends_deflated.csv")
+} else {
+  print("File already exists in the repository")
+}
+
 # 4. Exploring the data --------------------------------------------------------
 
 ## 4.1. Histograms of price distribution ---------------------------------------
@@ -266,8 +351,7 @@ ggplot(fipe_price_gasoline, aes(x = valor)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
-# 4.2. Line charts (yearly trends) ---------------------------------------------
-
+## 4.2. Line charts (yearly trends) ---------------------------------------------
 ### Average price (Nominal) ----------------------------------------------------
 
 plot_trend_yearly_avg_prices_nominal <- 
@@ -454,3 +538,99 @@ plot_trend_yearly_nr_models <-
 
 ggsave("./4_plots/plot_trend_yearly_nr_models.png",
        plot = plot_trend_yearly_nr_models)
+
+
+## 4.2. Line charts (monthly trends) ---------------------------------------------
+
+### Electric
+
+plot_trend_monthly_ev_prices_deflated <- 
+  ggplot(fipe_price_ev_trend_m, aes(x = date)) +
+  geom_line(aes(y = avg_price_e,     color = "Mean Price"),   size = 1)+
+  geom_line(aes(y = med_price_e,     color = "Median Price"), size = 1)+ 
+  geom_line(aes(y = min_price_e_def, color = "Lowest Price"), size = 1)+
+  scale_color_manual(
+    name = "Price Indicator",
+    values = c("Lowest Price" = "darkorange", "Mean Price" = "green3", "Median Price" = "blue2")
+  ) +
+  scale_y_continuous( 
+    labels = function(x) paste0("R$", format(x / 1000, big.mark = ".", decimal.mark = ","), " mil")) +
+  labs(
+    x = "Year",
+    y = "Average Deflated Yearly Price (BRL)",
+    title = "Monthly Evolution of Vehicle Prices for Electric Cars (2018–2022)",
+    subtitle = "Source: Peixoto, 2022",
+    caption = "\nData scrapped from the Fundação Instituto de Pesquisas Econômicas (FIPE)\ntable for average prices observed nationally in Brazil."
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.background = element_rect(fill = "#ffffff", color = NA)
+  )
+
+
+ggsave("./4_plots/plot_trend_monthly_ev_prices_deflated.png",
+       plot = plot_trend_monthly_ev_prices_deflated)
+
+### Gasoline
+
+plot_trend_monthly_gasoline_prices_deflated <- 
+  ggplot(fipe_price_gasoline_trend_m, aes(x = date)) +
+  geom_line(aes(y = avg_price_e,     color = "Mean Price"),   size = 1)+
+  geom_line(aes(y = med_price_e,     color = "Median Price"), size = 1)+ 
+  geom_line(aes(y = min_price_e_def, color = "Lowest Price"), size = 1)+
+  scale_color_manual(
+    name = "Price Indicator",
+    values = c("Lowest Price" = "darkorange", "Mean Price" = "green3", "Median Price" = "blue2")
+  ) +
+  scale_y_continuous( 
+    labels = function(x) paste0("R$", format(x / 1000, big.mark = ".", decimal.mark = ","), " mil")) +
+  labs(
+    x = "Year",
+    y = "Average Deflated Yearly Price (BRL)",
+    title = "Monthly Evolution of Vehicle Prices for Cars (Gasoline) (2018–2022)",
+    subtitle = "Source: Peixoto, 2022",
+    caption = "\nData scrapped from the Fundação Instituto de Pesquisas Econômicas (FIPE)\ntable for average prices observed nationally in Brazil."
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.background = element_rect(fill = "#ffffff", color = NA)
+  )
+
+ggsave("./4_plots/plot_trend_monthly_gasoline_prices_deflated.png",
+       plot = plot_trend_monthly_gasoline_prices_deflated)
+
+### Hybrid
+
+plot_trend_monthly_hybrid_prices_deflated <- 
+  ggplot(fipe_price_hybrid_trend_m, aes(x = date)) +
+  geom_line(aes(y = avg_price_e,     color = "Mean Price"),   size = 1)+
+  geom_line(aes(y = med_price_e,     color = "Median Price"), size = 1)+ 
+  geom_line(aes(y = min_price_e_def, color = "Lowest Price"), size = 1)+
+  scale_color_manual(
+    name = "Price Indicator",
+    values = c("Lowest Price" = "darkorange", "Mean Price" = "green3", "Median Price" = "blue2")
+  ) +
+  scale_y_continuous( 
+    labels = function(x) paste0("R$", format(x / 1000, big.mark = ".", decimal.mark = ","), " mil")) +
+  labs(
+    x = "Year",
+    y = "Average Deflated Yearly Price (BRL)",
+    title = "Monthly Evolution of Vehicle Prices for Cars (Hybrid/Ethanol) (2018–2022)",
+    subtitle = "Source: Peixoto, 2022",
+    caption = "\nData scrapped from the Fundação Instituto de Pesquisas Econômicas (FIPE)\ntable for average prices observed nationally in Brazil."
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.background = element_rect(fill = "#ffffff", color = NA)
+  )
+
+ggsave("./4_plots/plot_trend_monthly_hybrid_prices_deflated.png",
+       plot = plot_trend_monthly_hybrid_prices_deflated)
+
+

@@ -541,8 +541,7 @@ ggsave("./4_plots/plot_trend_yearly_nr_models.png",
 
 
 ## 4.2. Line charts (monthly trends) ---------------------------------------------
-
-### Electric
+### Electric -------------------------------------------------------------------
 
 plot_trend_monthly_ev_prices_deflated <- 
   ggplot(fipe_price_ev_trend_m, aes(x = date)) +
@@ -573,7 +572,7 @@ plot_trend_monthly_ev_prices_deflated <-
 ggsave("./4_plots/plot_trend_monthly_ev_prices_deflated.png",
        plot = plot_trend_monthly_ev_prices_deflated)
 
-### Gasoline
+### Gasoline  ------------------------------------------------------------------
 
 plot_trend_monthly_gasoline_prices_deflated <- 
   ggplot(fipe_price_gasoline_trend_m, aes(x = date)) +
@@ -603,7 +602,7 @@ plot_trend_monthly_gasoline_prices_deflated <-
 ggsave("./4_plots/plot_trend_monthly_gasoline_prices_deflated.png",
        plot = plot_trend_monthly_gasoline_prices_deflated)
 
-### Hybrid
+### Hybrid ---------------------------------------------------------------------
 
 plot_trend_monthly_hybrid_prices_deflated <- 
   ggplot(fipe_price_hybrid_trend_m, aes(x = date)) +

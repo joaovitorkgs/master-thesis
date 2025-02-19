@@ -44,7 +44,8 @@ pacman::p_load(
   plm,          # Perform panel data analysis (fixed/random effects models)
   deflateBr,    # Deflate nominal Brazilian Reais using price indexes
   car,
-  glmnet
+  glmnet,
+  DescTools
 )
 
 

@@ -38,12 +38,7 @@ income_data <- income_data %>%
 
 income_data_wide <- income_data %>% 
   filter(percentile %in% c(10,50,90,100)) %>% 
-  pivot_wider(names_from = percentile, values_from = c(avg_taxable_income,sum_taxable_income)) %>% 
-  filter(sigla_uf != "BRASIL") %>% 
-  mutate("90_50_sum" = sum_taxable_income_90 / sum_taxable_income_50,
-         "90_10_sum" = sum_taxable_income_90 / sum_taxable_income_10,
-         "90_50_avg" = avg_taxable_income_90 / avg_taxable_income_50,
-         "90_10_avg" = avg_taxable_income_90 / avg_taxable_income_10)
+  pivot_wider(names_from = percentile, values_from = c(avg_taxable_income,sum_taxable_income)) 
 
 if (!file.exists(  "./3_processed_data/income_data_wide.csv")) {
   write_csv(income_data_wide,
@@ -53,20 +48,76 @@ if (!file.exists(  "./3_processed_data/income_data_wide.csv")) {
   print("File already exists in the repository.")
 }
 
+summary(income_data_wide)
+
+
+# Given the lack of data for the years between 2021 and 2023, I decided to create
+# synthetic data for the missing data points using linear regressions for the 
+# available parametres and extrapolate to the missing years.
+
+# Define the years for prediction
+future_years <- data.frame(year = c(2021, 2022, 2023))
+
+# Define a function to fit linear regression and predict future values
+predict_future_values <- function(data) {
+  # Fit linear models for each income column
+  avg_models <- lapply(c("avg_taxable_income_10", "avg_taxable_income_50", 
+                         "avg_taxable_income_90", "avg_taxable_income_100"), function(col) {
+                           lm(as.formula(paste(col, "~ year")), data = data)
+                         })
+  
+  sum_models <- lapply(c("sum_taxable_income_10", "sum_taxable_income_50", 
+                         "sum_taxable_income_90", "sum_taxable_income_100"), function(col) {
+                           lm(as.formula(paste(col, "~ year")), data = data)
+                         })
+  
+  # Predict future values for each column
+  avg_predictions <- sapply(avg_models, function(model) predict(model, newdata = future_years))
+  sum_predictions <- sapply(sum_models, function(model) predict(model, newdata = future_years))
+  
+  # Combine predictions into a single data frame
+  predictions <- cbind(future_years,
+                       avg_predictions,
+                       sum_predictions)
+  
+  colnames(predictions)[-1] <- c("avg_taxable_income_10", "avg_taxable_income_50",
+                                 "avg_taxable_income_90", "avg_taxable_income_100",
+                                 "sum_taxable_income_10", "sum_taxable_income_50",
+                                 "sum_taxable_income_90", "sum_taxable_income_100")
+  
+  return(predictions)
+}
+
+# Apply the function to each state (sigla_uf)
+synthetic_data <- income_data_wide %>%
+  group_by(sigla_uf) %>%
+  group_split() %>%
+  lapply(predict_future_values) %>%
+  bind_rows(.id = "group") %>%
+  mutate(sigla_uf = unique(income_data_wide$sigla_uf)[as.numeric(group)]) %>%
+  select(-group)
+
+
+## MAEKD TO FINISH LATER: there is an issue with the bind_rows step below. 
+
+# Combine synthetic data with the original dataframe
+income_data_wide_syn <- income_data_wide %>% 
+  bind_rows(synthetic_data) %>% 
+  mutate("90_50_sum" = sum_taxable_income_90 / sum_taxable_income_50,
+         "90_10_sum" = sum_taxable_income_90 / sum_taxable_income_10,
+         "90_50_avg" = avg_taxable_income_90 / avg_taxable_income_50,
+         "90_10_avg" = avg_taxable_income_90 / avg_taxable_income_10)
+
+income_data_wide_uf <- income_data_wide %>% 
+  filter(sigla_uf != "BRASIL") 
+
 
 
 # 3. Visualizing data sets -----------------------------------------------------
 
 
-income_data_br_wide <- income_data %>% 
-  filter(percentile %in% c(10,50,90,100)) %>% 
-  pivot_wider(names_from = percentile, values_from = c(avg_taxable_income,sum_taxable_income)) %>% 
-  filter(sigla_uf == "BRASIL",
-         year     >= 2013) %>% 
-  mutate("90_50_sum" = sum_taxable_income_90 / sum_taxable_income_50,
-         "90_10_sum" = sum_taxable_income_90 / sum_taxable_income_10,
-         "90_50_avg" = avg_taxable_income_90 / avg_taxable_income_50,
-         "90_10_avg" = avg_taxable_income_90 / avg_taxable_income_10)
+income_data_br_wide <- income_data_wide %>% 
+  filter(sigla_uf == "BRASIL") 
 
 
 plot_trend_sum_taxable_income <- 

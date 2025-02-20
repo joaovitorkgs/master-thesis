@@ -70,7 +70,7 @@ income_data_br_wide <- income_data %>%
 
 
 plot_trend_sum_taxable_income <- 
-  ggplot(income_data_br, aes(x = year)) +
+  ggplot(income_data_br_wide, aes(x = year)) +
   geom_line(aes(y = sum_taxable_income_10,   color = "Bottom 10%"), size = 1) +
   geom_line(aes(y = sum_taxable_income_50,   color = "Top 50%"), size = 1) +
   geom_line(aes(y = sum_taxable_income_90,   color = "Top 90%"), size = 1) +
@@ -111,7 +111,7 @@ ggsave(filename = "./4_plots/plot_trend_sum_taxable_income.png",
 
 
 plot_trend_avg_taxable_income <- 
-  ggplot(income_data_br, aes(x = year)) +
+  ggplot(income_data_br_wide, aes(x = year)) +
   geom_line(aes(y = avg_taxable_income_10,   color = "Bottom 10%"), size = 1) +
   geom_line(aes(y = avg_taxable_income_50,   color = "Top 50%"), size = 1) +
   geom_line(aes(y = avg_taxable_income_90,   color = "Top 90%"), size = 1) +

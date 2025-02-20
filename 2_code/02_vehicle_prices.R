@@ -290,6 +290,55 @@ fipe_price_monthly_trends_deflated <- fipe_price_13_22_df %>%
     names_glue = "{.value}_{fuel_type}"
   )
 
+##### Creating the synthetic data for evs missing price values -----------------
+
+# I took sources online that stated that the average value of evs in Brazil in
+# 2013 was between 120 and 130k, and just assumed this value as constant for the
+# missing data points. I then deflated them to keep all values comparable.
+
+deflateBR::deflate(nominal_values = 130000, 
+                   nominal_dates = as.Date("2018-01-01"),
+                   real_date = "12/2022",
+                   index = "inpc")
+
+dates <- seq(as.Date("2013-01-01"), as.Date("2018-11-01"), by = "month")
+
+# Create the initial dataframe with the date column
+synth_ev_price <- data.frame(date = dates)
+
+# Define the nominal value and real date
+nominal_value <- 130000
+real_date <- as.Date("2022-12-01")
+
+# Calculate deflated values for each date
+deflated_values <- sapply(dates, function(d) {
+  deflateBR::deflate(nominal_value, 
+                     nominal_date = d, 
+                     real_date = "12/2022",
+                     index = "ipca")
+  })
+
+# Add the deflated value columns to the dataframe
+synth_ev_price$mean_price_electric   <- deflated_values
+synth_ev_price$median_price_electric <- deflated_values
+synth_ev_price$min_price_electric    <- deflated_values
+synth_ev_price$max_price_electric    <- deflated_values
+
+# Sliced the data to substitute the NA values
+fipe_price_0to71   <- head(fipe_price_monthly_trends_deflated,71)
+fipe_price_72to116 <- tail(fipe_price_monthly_trends_deflated,45)
+
+fipe_price_0to71 <- fipe_price_0to71 %>%
+  mutate(
+    mean_price_electric   = coalesce(mean_price_electric,   synth_ev_price$mean_price_electric),
+    median_price_electric = coalesce(median_price_electric, synth_ev_price$median_price_electric),
+    min_price_electric    = coalesce(min_price_electric,    synth_ev_price$min_price_electric),
+    max_price_electric    = coalesce(max_price_electric,    synth_ev_price$max_price_electric),
+    nr_models_electric    = 1)
+
+fipe_price_monthly_trends_deflated <- fipe_price_0to71 %>% 
+  bind_rows(fipe_price_72to116)
+
 
 if (!file.exists(  "./3_processed_data/fipe_price_monthly_trends_deflated.csv")) {
   write_csv(fipe_price_monthly_trends_deflated,
@@ -297,6 +346,7 @@ if (!file.exists(  "./3_processed_data/fipe_price_monthly_trends_deflated.csv"))
 } else {
   print("File already exists in the repository")
 }
+
 
 # 4. Exploring the data --------------------------------------------------------
 

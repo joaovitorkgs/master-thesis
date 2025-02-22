@@ -129,21 +129,29 @@ stargazer(fe_model_1, fe_model_2, type = "text")
 
 ### 3.1.3 Panel data with fixed effects for states -----------------------------
 
-panel_data <- pdata.frame(fleet_df, index = c("id_municipio_nome", "date"))
+panel_data <- pdata.frame(fleet_df_c, index = c("sigla_uf", "date"))
 
-fe_model_1 <- plm(electric ~ log(populacao) + as.factor(months_nr),
+fe_model_1 <- plm(log(electric) ~ log(population) + as.factor(months_nr),
                   data  = panel_data,
                   model = "within")
 
-fe_model_2 <- plm(electric ~ log(populacao) + log(gasoline) + log(diesel) + log(ethanol) + as.factor(months_nr),
+fe_model_2 <- plm(log(electric) ~ log(mean_ev) + log(avg_taxable_income_100) + as.factor(months_nr),
                   data  = panel_data,
                   model = "within")
 
-stargazer(fe_model_1, fe_model_2, type = "text")
+fe_model_3 <- plm(log(electric) ~ log(population) + log(gasoline) + log(diesel) + log(ethanol) + as.factor(months_nr),
+                  data  = panel_data,
+                  model = "within")
 
-stargazer(fe_model_1, fe_model_2, type = "html",
+fe_model_4 <- plm(log(electric) ~ log(mean_ev) + log(avg_taxable_income_100) + log(population) + log(gasoline) + log(diesel) + log(ethanol) + as.factor(months_nr),
+                  data  = panel_data,
+                  model = "within")
+
+stargazer(fe_model_1, fe_model_2, fe_model_3, fe_model_4, type = "text")
+
+stargazer(fe_model_1, fe_model_2, fe_model_3, fe_model_4, type = "html",
           title="Fixed-Effects Linear Regression Results: Panel Data", single.row=TRUE,
-          out = "./5_analysis/1_regression_tables/fe_models_1&2.html")
+          out = "./5_analysis/1_regression_tables/fe_models_1-4.html")
 
 
 ### 3.1.3. Time Series ---------------------------------------------------------
@@ -358,7 +366,6 @@ cv_mars$finalModel %>%
 # So far, the model is not yielding any relevant variables
 
 
-
 cv_mars$finalModel %>%
   coef() %>%  
   broom::tidy() %>%  
@@ -378,7 +385,7 @@ p3 <- partial(cv_mars, pred.var = c("population", "avg_taxable_income_100"),
 gridExtra::grid.arrange(p1, p2, p3, ncol = 3)
 
 
-?
+?rsample
 # get attrition data
 df <- rsample::attrition %>% mutate_if(is.ordered, factor, ordered = FALSE)
 
@@ -409,6 +416,123 @@ tuned_mars$bestTune
 
 # plot results
 ggplot(tuned_mars)
+
+
+
+
+
+
+
+
+
+## 3.4. Decision Trees ---------------------------------------------------------
+
+### Overall explanation --------------------------------------------------------  
+
+# A basic decision tree partitions the training data into homogeneous subgroups 
+# (i.e., groups with similar response values) and then fits a simple constant in each subgroup
+# (e.g., the mean of the within group response values for regression). The subgroups
+# (also called nodes) are formed recursively using binary partitions formed by asking
+# simple yes-or-no questions about each feature (e.g., is age < 18?). This is done a number
+# of times until a suitable stopping criteria is satisfied (e.g., a maximum depth of the tree is reached).
+# After all the partitioning has been done, the model predicts the output based on (1) the
+# average response values for all observations that fall in that subgroup (regression problem),
+# or (2) the class that has majority representation (classification problem). For classification,
+# predicted probabilities can be obtained using the proportion of each class within the subgroup.
+
+
+### Data exploration -----------------------------------------------------------
+
+# Before starting the models, I tried to visualize the relationship between some 
+# key variables (population size, ev price, income levels) to see what would make
+# sense to find in the model.
+
+# Population has a clear positive correlation (maybe obvious)
+
+ggplot(data = fleet_df_c, aes(x=population, y=electric)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "red") + # Add linear regression line
+  ggtitle("Relationship between Population Size and EV stock per Brazilian States")+
+  theme_bw() +
+  ylab("Electric Cars (log)") +
+  xlab("Average Taxable Income of the 100th Percentile (log)") +
+  scale_x_continuous(trans = "log10", labels = scales::comma) + # Log scale for x-axis with meaningful labels
+  scale_y_continuous(trans = "log10", labels = scales::comma) +  # Log scale for y-axis with meaningful labels
+  facet_wrap(~year, nrow = 3, ncol = 4)
+
+# Average taxable income of the richest percentile also seems to have a correlation
+
+fleet_df_c %>% 
+  group_by(year, sigla_uf) %>% 
+  summarize(
+    avg_taxable_income_100 = mean(avg_taxable_income_100),
+    electric = mean(electric)) %>% 
+  ggplot(aes(x=avg_taxable_income_100, y=electric)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "red") + # Add linear regression line
+  ggtitle("Relationship between Average Income of the 100th Percentile and EV stock per Brazilian States")+
+  theme_bw() +
+  ylab("Electric Cars (log)") +
+  xlab("Average Taxable Income of the 100th Percentile (log)") +
+  scale_x_continuous(trans = "log10", labels = scales::comma) + # Log scale for x-axis with meaningful labels
+  scale_y_continuous(trans = "log10", labels = scales::comma) +  # Log scale for y-axis with meaningful labels
+  facet_wrap(~year, nrow = 3, ncol = 4)
+  
+# This is not true for the median income percentile
+
+fleet_df_c %>% 
+  group_by(year, sigla_uf) %>% 
+  summarize(
+    avg_taxable_income_50 = mean(avg_taxable_income_50),
+    electric = mean(electric)) %>% 
+  ggplot(aes(x=avg_taxable_income_50, y=electric)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "red") + # Add linear regression line
+  ggtitle("Relationship between Average Income of the 50th Percentile and EV stock per Brazilian States")+
+  theme_bw() +
+  ylab("Electric Cars (log)") +
+  xlab("Average Taxable Income of the 50th Percentile (log)") +
+  scale_x_continuous(trans = "log10", labels = scales::comma) + # Log scale for x-axis with meaningful labels
+  scale_y_continuous(trans = "log10", labels = scales::comma) +  # Log scale for y-axis with meaningful labels
+  facet_wrap(~year, nrow = 3, ncol = 4)
+
+# Also not true for the bottom 10 percentile
+
+fleet_df_c %>% 
+  group_by(year, sigla_uf) %>% 
+  summarize(
+    avg_taxable_income_10 = mean(avg_taxable_income_10),
+    electric = mean(electric)) %>% 
+  ggplot(aes(x=avg_taxable_income_10, y=electric)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "red") + # Add linear regression line
+  ggtitle("Relationship between Average Income of the 10th Percentile and EV stock per Brazilian States")+
+  theme_bw() +
+  ylab("Electric Cars (log)") +
+  xlab("Average Taxable Income of the 50th Percentile (log)") +
+  scale_x_continuous(labels = scales::comma) + # Log scale for x-axis with meaningful labels
+  scale_y_continuous(trans = "log10", labels = scales::comma) +  # Log scale for y-axis with meaningful labels
+  facet_wrap(~year, nrow = 3, ncol = 4)
+
+
+# EV prices may have a relevant correlation
+
+fleet_df_c %>% 
+  filter(year < 2017) %>% 
+  group_by(date) %>% 
+  summarize(
+    ev_price = mean(mean_ev),
+    electric = mean(electric)) %>% 
+  ggplot(aes(x=ev_price, y=electric)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "red") + # Add linear regression line
+  ggtitle("Relationship between EV priceand EV stock per Month (2017-2022)")+
+  theme_bw() +
+  ylab("Electric Cars (log)") +
+  xlab("EV average price (per month)") +
+  scale_x_continuous(labels = scales::comma) + # Log scale for x-axis with meaningful labels
+  scale_y_continuous(trans = "log10", labels = scales::comma) # Log scale for y-axis with meaningful labels
+
 
 
 

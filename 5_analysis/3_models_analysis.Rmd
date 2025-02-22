@@ -1,0 +1,369 @@
+---
+title: "MT: Colloquium Preparation"
+author: "Joao Vitor Krieger | joaovitorkgs"
+date: "`r format(Sys.time(), '%B %d, %Y | %H:%M:%S | %Z')`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+    toc_depth: 4
+    number_sections: true
+    theme: journal
+    code_folding: hide
+    df_print: paged
+    highlight: tango
+    
+---
+
+<style>
+div.answer {background-color:#f3f0ff; border-radius: 5px; padding: 20px;}
+div.comment {background-color:#F0F6FF; border-radius: 5px; padding: 20px;}
+
+</style>
+<style>
+div.gradingadvice {background-color:#a2bc89; border-radius: 5px; padding: 20px;}
+</style>
+<style>
+div.examplefeedback {background-color:#FFA500; border-radius: 5px; padding: 20px;}
+</style>
+<style>
+div.lookfor {background-color:#a389bc; border-radius: 5px; padding: 20px;}
+</style>
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      eval = TRUE,
+                      error = FALSE,
+                      message = FALSE,
+                      warning = FALSE,
+                      comment = NA)
+
+knitr::opts_knit$set(root.dir = "C:/Users/joaov/Dropbox/R Assignments/master-thesis/")
+
+```
+
+------------------------------------------------------------------------
+
+```{r, include = T}
+pacman::p_load(
+  # Core Data Manipulation and Tidying
+  dplyr,        # Data manipulation: filtering, summarizing, mutating, and more
+  tidyr,        # Data tidying and reshaping: pivoting, handling missing values
+  janitor,      # Clean messy data (e.g., column names) and create summary tables
+  stringr,      # Simple and consistent string manipulation functions
+  stringi,      # Advanced string manipulation with Unicode support
+  lubridate,    # Simplify date and time parsing and manipulation
+
+  # Data Import and Export
+  readr,        # Read flat files (CSV, TSV) into tibbles
+  readxl,       # Read Excel files (.xls, .xlsx) into data frames
+  basedosdados, # Access Brazilian public data via BigQuery
+  httr,         # Perform HTTP requests to interact with web APIs
+  archive,      # Extract files from compressed archives (.zip, .tar.gz)
+
+  # Data Visualization
+  ggplot2,      # Create customizable data visualizations using the grammar of graphics
+  scales,       # Format axes and legends (e.g., percentages, currencies)
+  viridis,      # Color palettes for data visualization (colorblind-friendly)
+  RColorBrewer, # Additional color palettes for plots
+
+  # Geographic and Spatial Data
+  geobr,        # Access Brazilian geographic data (e.g., shapefiles)
+  sf,           # Handle spatial/geographic data in R
+
+  # Reporting and Tables
+  gt,           # Tables for reporting results
+  stargazer,    # Generate regression tables in LaTeX/HTML/text formats
+
+  # Machine Learning and Statistics
+  caret,        # Comprehensive machine learning framework (classification/regression)
+  Metrics,      # Evaluate model performance (e.g., RMSE, MAE)
+  glmnet,       # Regularized generalized linear models (Lasso, Ridge)
+  earth,        # Multivariate Adaptive Regression Splines
+  vip,          # Variable Importance Plots
+  pdp,          # Partial Dependence Plots
+  car,          # Companion to Applied Regression (diagnostic functions)
+  DescTools,    # Tools for descriptive statistics
+  rsample,      # Functions for resampling data
+
+  # Specialized Analysis
+  plm,          # Perform panel data analysis (fixed/random effects models)
+  deflateBr     # Deflate nominal Brazilian Reais using price indexes
+)
+
+```
+
+
+------------------------------------------------------------------------
+
+## Introduction
+
+This document seems to outline the overall results I have achieved so far as part of my MT research and data work. It will focus on explaining some of the key data used, some descriptive statistics and results or information on the models attempted.
+
+As a recap: my research question explores the projected impacted of changes in the electric vehicle (EV) stock in Brazil in tax revenue. For this to be achieved, the methodology proposed is to use machine learning methods to project the EV stock in the coming years based on data available from the past 10 years. It uses the number of EVs as outcome variable, and a series of different predictors (other types of passenger cars (e.g. gasoline, diesel, ethanol), income distribution, population size, average EV price), with the unit of observation being Brazilian states in a given month, with the time frame ranging from May 2013 to August 2022 due to data availability.
+
+Once this is achieved, the next step of the research will be to use a calculation method based on OECD, 2019 to calculate tax revenue scenarios based on taxes related to vehicle activity, vehicle stock, and energy consumption.
+
+### Descriptive statistics
+
+During the initial data research, further descriptive statistics has been produced as a way of exploring the topic and what trends and important information might inform this thesis work.
+
+
+
+------------------------------------------------------------------------
+
+## Data used
+
+### Overview
+
+All data used has been obtained from publicly available data from Brazilian official sources, including:
+
+- National Traffic Secretariat (2024): fleet size per vehicle type (monthly data on city level).
+- Sepcial Secretariat of the Federal Revenue of Brazil (RFB): income distribution and tax revenue.
+- Peixoto (2024): average vehicle prices by vehicle/fuel type (monthly data on national level).
+- Base dos Dados (2024): demographic and geographic data, including population size per city and state.
+
+The data frames loaded below are already the product of the project's pipeline, including data scraping or downloading, cleaning and organizing for the purpose of this analysis.
+
+```{r}
+
+fleet_2013_2024_clean <- read_csv("./3_processed_data/fleet_2013_2024_id_clean.csv")
+price_df              <- read_csv("./3_processed_data/fipe_price_monthly_trends_deflated.csv")
+income_data_wide_uf   <- read_csv("./3_processed_data/income_data_wide_uf.csv")
+
+```
+
+Information on the EV stock per fuel type
+
+```{r}
+stargazer(as.data.frame(fleet_2013_2024_clean),
+          type = "text")
+```
+
+Information on the passenger car prices per fuel type (values in deflated BRL)
+
+```{r}
+# 
+stargazer(as.data.frame(price_df),
+          type = "text")
+```
+
+Information on the income distribution in Brazil (values in deflated BRL)
+```{r}
+stargazer(as.data.frame(income_data_wide_uf),
+          type = "text")
+```
+
+For the models, the main data sets have been processed further. The processed data sets used in the models in the following sections are indicated below.
+
+<br>
+
+### Fleet size and population on city level
+
+```{r}
+
+months <- fleet_2013_2024_clean %>% 
+  arrange(date) %>%  
+  distinct(date) %>%  
+  mutate(months_nr = row_number()) 
+
+fleet_df <- fleet_2013_2024_clean %>% 
+  mutate(ev_pc        = electric / populacao,
+         ff_pc        = (gasoline+diesel)/populacao,
+         log_electric = log(electric),
+         log_ff       = log(gasoline+diesel),
+         log_pop      = log(populacao)) %>% 
+  filter(log_electric >= 0) %>% 
+  left_join(months, by="date")
+
+```
+
+<br>
+
+### Price information
+
+```{r}
+
+fleet_df_b_city <- fleet_df %>% 
+  left_join(price_df, by = "date") 
+
+fleet_df_b_uf <- fleet_df %>% 
+  left_join(price_df, by = "date") %>% 
+  group_by(sigla_uf, date, months_nr) %>% 
+  summarize(diesel     = sum(diesel),
+            ethanol    = sum(ethanol),
+            gasoline   = sum(gasoline),
+            other      = sum(other),
+            electric   = sum(electric),
+            gas        = sum(gas),
+            population = sum(populacao))
+
+fleet_df_b_uf <- fleet_df %>% 
+  left_join(price_df, by = "date") %>% 
+  group_by(sigla_uf, date, year, month, months_nr) %>% 
+  summarize(diesel     = sum(diesel),
+            ethanol    = sum(ethanol),
+            gasoline   = sum(gasoline),
+            other      = sum(other),
+            electric   = sum(electric),
+            gas        = sum(gas),
+            population = sum(populacao),
+            mean_gas   = mean(mean_price_gasoline),
+            mean_hyb   = mean(mean_price_hybrid),
+            mean_ev    = mean(mean_price_electric),
+            median_gas = mean(median_price_gasoline),
+            median_hyb = mean(median_price_hybrid),
+            median_ev  = mean(median_price_electric),
+            min_gas    = mean(min_price_gasoline),
+            min_hyb    = mean(min_price_hybrid),
+            min_ev     = mean(min_price_electric)) %>% 
+  mutate(ff_pc        = (gasoline+diesel)/population,
+         log_ff       = log(gasoline+diesel),
+         log_pop      = log(population))
+
+```
+
+<br>
+
+### Income Information
+
+```{r}
+
+fleet_df_c <- fleet_df_b_uf %>% 
+  left_join(income_data_wide_uf, by = c("year", "sigla_uf")) %>% 
+  drop_na()
+
+```
+
+
+
+### Visualizing and explorign the data
+
+Before starting the models, I tried to visualize the relationship between some key variables (population size, ev price, income levels) to see what would make sense to find in the model.
+
+#### Population size vs. EV stock
+
+Population has a clear positive correlation, though this may be somewhat obvious. I am not yet entirely sure if I should move forward with this variable as a predictor.
+
+```{r}
+ggplot(data = fleet_df_c, aes(x=population, y=electric)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "red") + # Add linear regression line
+  ggtitle("Relationship between Population Size and EV stock per Brazilian States")+
+  theme_bw() +
+  ylab("Electric Cars (log)") +
+  xlab("Average Taxable Income of the 100th Percentile (log)") +
+  scale_x_continuous(trans = "log10", labels = scales::comma) + # Log scale for x-axis with meaningful labels
+  scale_y_continuous(trans = "log10", labels = scales::comma) +  # Log scale for y-axis with meaningful labels
+  facet_wrap(~year, nrow = 3, ncol = 4)
+
+```
+
+<br>
+
+#### Income distribution vs. EV stock
+
+Average taxable income of the richest percentile also seems to have a correlation. This suggests that acquiring an EV seems to be inaccessible for most of the population.
+
+```{r}
+fleet_df_c %>% 
+  group_by(year, sigla_uf) %>% 
+  summarize(
+    avg_taxable_income_100 = mean(avg_taxable_income_100),
+    electric = mean(electric)) %>% 
+  ggplot(aes(x=avg_taxable_income_100, y=electric)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "red") + # Add linear regression line
+  ggtitle("Relationship between Average Income of the 100th Percentile and EV stock per Brazilian States")+
+  theme_bw() +
+  ylab("Electric Cars (log)") +
+  xlab("Average Taxable Income of the 100th Percentile (log)") +
+  scale_x_continuous(trans = "log10", labels = scales::comma) + # Log scale for x-axis with meaningful labels
+  scale_y_continuous(trans = "log10", labels = scales::comma) +  # Log scale for y-axis with meaningful labels
+  facet_wrap(~year, nrow = 3, ncol = 4)
+
+```
+
+<br>
+
+This correlation is not clear when looking into the average income for the 50th percentile (median). The plots suggest a negative correlation.
+
+```{r}
+fleet_df_c %>% 
+  group_by(year, sigla_uf) %>% 
+  summarize(
+    avg_taxable_income_50 = mean(avg_taxable_income_50),
+    electric = mean(electric)) %>% 
+  ggplot(aes(x=avg_taxable_income_50, y=electric)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "red") + # Add linear regression line
+  ggtitle("Relationship between Average Income of the 50th Percentile and EV stock per Brazilian States")+
+  theme_bw() +
+  ylab("Electric Cars (log)") +
+  xlab("Average Taxable Income of the 50th Percentile (log)") +
+  scale_x_continuous(trans = "log10", labels = scales::comma) + # Log scale for x-axis with meaningful labels
+  scale_y_continuous(trans = "log10", labels = scales::comma) +  # Log scale for y-axis with meaningful labels
+  facet_wrap(~year, nrow = 3, ncol = 4)
+```
+
+<br>
+
+This correlation is also not clear when looking into the average income for the bottom 10th percentile. The plots suggest a negative correlation.
+
+```{r}
+
+# Also not true for the bottom 10 percentile
+
+fleet_df_c %>% 
+  group_by(year, sigla_uf) %>% 
+  summarize(
+    avg_taxable_income_10 = mean(avg_taxable_income_10),
+    electric = mean(electric)) %>% 
+  ggplot(aes(x=avg_taxable_income_10, y=electric)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "red") + # Add linear regression line
+  ggtitle("Relationship between Average Income of the 10th Percentile and EV stock per Brazilian States")+
+  theme_bw() +
+  ylab("Electric Cars (log)") +
+  xlab("Average Taxable Income of the 50th Percentile (log)") +
+  scale_x_continuous(labels = scales::comma) + # Log scale for x-axis with meaningful labels
+  scale_y_continuous(trans = "log10", labels = scales::comma) +  # Log scale for y-axis with meaningful labels
+  facet_wrap(~year, nrow = 3, ncol = 4)
+
+```
+
+<br>
+
+#### EV average prices vs. EV stock
+
+EV prices and EV stock might be correlated as well, suggesting that more EVs are bought as more affordable vehicles are available in the Brazilian market, though the data points are oddly spread in the plot, as I do not have an explanation for these two clusters. 
+
+I used data on the cheapest EV model available in the Brazilian market in a given month, and the EV stock size in the corresponding month.
+
+```{r}
+fleet_df_c %>% 
+  filter(year > 2017) %>% 
+  group_by(date) %>% 
+  summarize(
+    ev_price = mean(min_ev)/1000,
+    electric = mean(electric)) %>% 
+  ggplot(aes(x=ev_price, y=electric)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "red") + # Add linear regression line
+  ggtitle("Relationship between EV price and EV stock per Month (2017-2022)")+
+  theme_bw() +
+  ylab("Electric Cars (log)") +
+  xlab("EV average price (thousand BRL)") +
+  scale_x_continuous(labels = scales::comma) + # Log scale for x-axis with meaningful labels
+  scale_y_continuous(trans = "log10", labels = scales::comma) # Log scale for y-axis with meaningful labels
+
+```
+
+
+------------------------------------------------------------------------
+
+
+
+
+

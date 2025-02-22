@@ -9,7 +9,6 @@ income_data_raw <- read_delim("1_raw_data/6_income/distribuicao-renda.csv",
 
 # 3. Transforming data sets ----------------------------------------------------
 
-rm(income_data)
 # Income data used refers to yearly gross taxable income
 income_data <- income_data_raw %>% 
   rename(avg_taxable_income = `Rendimentos Tributaveis - Média da RTB do Centil [R$]`,
@@ -98,68 +97,60 @@ synthetic_data <- income_data_wide %>%
   select(-group)
 
 
-## MAEKD TO FINISH LATER: there is an issue with the bind_rows step below. 
-
 # Combine synthetic data with the original dataframe
-income_data_wide_syn <- income_data_wide %>% 
-  bind_rows(synthetic_data) %>% 
+income_data_wide_syn <- bind_rows(income_data_wide, synthetic_data) %>% 
   mutate("90_50_sum" = sum_taxable_income_90 / sum_taxable_income_50,
          "90_10_sum" = sum_taxable_income_90 / sum_taxable_income_10,
          "90_50_avg" = avg_taxable_income_90 / avg_taxable_income_50,
          "90_10_avg" = avg_taxable_income_90 / avg_taxable_income_10)
 
-income_data_wide_uf <- income_data_wide %>% 
-  filter(sigla_uf != "BRASIL") 
+income_data_wide_uf <- income_data_wide_syn %>% 
+  filter(sigla_uf != "BRASIL",
+         year > 2012)
 
+## Visualizing the income distribution data set --------------------------------
+
+ggplot(income_data_wide_uf, aes(x=avg_taxable_income_50)) +
+  geom_density() +
+  ggtitle("Distribution of the Average Median Income Distribution in Brazilian States")+
+  scale_fill_viridis(discrete=TRUE) +
+  scale_color_viridis(discrete=TRUE) +
+  theme_bw() +
+  facet_wrap(~year, nrow = 5) +
+  ylab("Density") +
+  xlab("Average Median Taxable Income of the 50 Percentile") 
+  
+ggplot(income_data_wide_uf, aes(x=avg_taxable_income_90)) +
+  geom_density() +
+  ggtitle("Distribution of the Income Distribution in Brazilian States (90 Percentile)")+
+  scale_fill_viridis(discrete=TRUE) +
+  scale_color_viridis(discrete=TRUE) +
+  theme_bw() +
+  facet_wrap(~year, nrow = 5) +
+  ylab("Density") +
+  xlab("Average Taxable Income of the top 10 Percentile") 
+
+income_data_wide <- income_data %>% 
+  filter(percentile %in% c(10,50,90,100)) %>% 
+  pivot_wider(names_from = percentile, values_from = c(avg_taxable_income,sum_taxable_income)) 
+
+## Exporting the processed file ------------------------------------------------
+
+if (!file.exists(  "./3_processed_data/income_data_wide_uf.csv")) {
+  write_csv(income_data_wide_uf,
+            file = "./3_processed_data/income_data_wide_uf.csv")
+  print("File succesfully written.")
+} else {
+  print("File already exists in the repository.")
+}
 
 
 # 3. Visualizing data sets -----------------------------------------------------
 
 
-income_data_br_wide <- income_data_wide %>% 
-  filter(sigla_uf == "BRASIL") 
-
-
-plot_trend_sum_taxable_income <- 
-  ggplot(income_data_br_wide, aes(x = year)) +
-  geom_line(aes(y = sum_taxable_income_10,   color = "Bottom 10%"), size = 1) +
-  geom_line(aes(y = sum_taxable_income_50,   color = "Top 50%"), size = 1) +
-  geom_line(aes(y = sum_taxable_income_90,   color = "Top 90%"), size = 1) +
-  geom_line(aes(y = sum_taxable_income_100,  color = "Top 100%"), size = 1) +
-  scale_color_manual(
-    name = "Percentiles",
-    values = c("Bottom 10%" = "blue3", 
-               "Top 50%"    = "yellow3", 
-               "Top 90%"    = "orange3",
-               "Top 100%"   = "red4")) +
-  scale_y_continuous(
-    trans = "log10",   # Log10 transformation
-    breaks = trans_breaks("log10", function(x) 10^x),   # Define breaks in log10 scale
-    labels = label_number(scale = 1/1000, big.mark = ",", decimal.mark = ".")
-    ) +
-  scale_x_continuous(
-    breaks = 2013:2020, # Ensure all years from 2013 to 2022 are shown
-    labels = as.character(2013:2020) # Convert to character for cleaner labels
-  ) +
-  labs(
-    x = "Year",
-    y = "Sum of Gross Taxable Income (thousand BRL)",
-    title = "Evolution of Total Gross Taxable Income per Percentiles in Brazil (2013-2020)",
-    subtitle = "Source: Ministry of Treasury, 2021",
-  ) +
-  theme_minimal() +
-  theme(
-    legend.position = "right",
-    axis.text.x = element_text(angle = 45, hjust = 1),
-    plot.background = element_rect(fill = "#ffffff", color = NA)
-  )
-
-ggsave(filename = "./4_plots/plot_trend_sum_taxable_income.png",
-       plot     = plot_trend_sum_taxable_income,
-       width    = 10,
-       height   = 5)
-
-
+income_data_br_wide <- income_data_wide_syn %>% 
+  filter(sigla_uf == "BRASIL",
+         year > 2012)
 
 plot_trend_avg_taxable_income <- 
   ggplot(income_data_br_wide, aes(x = year)) +
@@ -179,8 +170,8 @@ plot_trend_avg_taxable_income <-
     labels = label_number(scale = 1/1000, big.mark = ",", decimal.mark = ".")
   ) +
   scale_x_continuous(
-    breaks = 2013:2020, # Ensure all years from 2013 to 2022 are shown
-    labels = as.character(2013:2020) # Convert to character for cleaner labels
+    breaks = 2013:2023, # Ensure all years from 2013 to 2022 are shown
+    labels = as.character(2013:2023) # Convert to character for cleaner labels
   ) +
   labs(
     x = "Year",
@@ -201,17 +192,16 @@ ggsave(filename = "./4_plots/plot_trend_avg_taxable_income.png",
        height   = 5)
 
 
-plot_trend_income_dist_905010 <- 
+plot_trend_income_dist_9010 <- 
   ggplot(income_data_br_wide, aes(x = year)) +
-  geom_line(aes(y = `90_50_avg`,   color = "Ratio 90/50")) +
   geom_line(aes(y = `90_10_avg`,   color = "Ratio 90/10")) +
   scale_color_manual(
     name = "Ratios",
     values = c("Ratio 90/50" = "blue3",
                "Ratio 90/10" = "orange3")) +
   scale_x_continuous(
-    breaks = 2013:2020, # Ensure all years from 2013 to 2022 are shown
-    labels = as.character(2013:2020) # Convert to character for cleaner labels
+    breaks = 2013:2023, # Ensure all years from 2013 to 2022 are shown
+    labels = as.character(2013:2023) # Convert to character for cleaner labels
   ) +
   scale_y_continuous()+
   labs(

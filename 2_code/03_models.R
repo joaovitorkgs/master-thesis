@@ -8,6 +8,8 @@ source("./2_code/00_packages.R")
 
 fleet_2013_2024_clean <- read_csv("./3_processed_data/fleet_2013_2024_id_clean.csv")
 price_df <- read_csv("3_processed_data/fipe_price_monthly_trends_deflated.csv")
+income_data_wide_uf <- read_csv("3_processed_data/income_data_wide_uf.csv")
+
 
 
 # 3. Models --------------------------------------------------------------------
@@ -51,7 +53,7 @@ fleet_df_b_uf <- fleet_df %>%
 
 fleet_df_b_uf <- fleet_df %>% 
   left_join(price_df, by = "date") %>% 
-  group_by(sigla_uf, date, months_nr) %>% 
+  group_by(sigla_uf, date, year, month) %>% 
   summarize(diesel     = sum(diesel),
             ethanol    = sum(ethanol),
             gasoline   = sum(gasoline),
@@ -73,6 +75,13 @@ fleet_df_b_uf <- fleet_df %>%
          log_electric = log(electric),
          log_ff       = log(gasoline+diesel),
          log_pop      = log(population))
+
+
+### c) Income information ------------------------------------------------------
+
+fleet_df_c <- fleet_df_b_uf %>% 
+  left_join(income_data_wide_uf, by = c("year", "sigla_uf")) %>% 
+  drop_na()
 
 
 ## 3.1. Supervised Learning ----------------------------------------------------

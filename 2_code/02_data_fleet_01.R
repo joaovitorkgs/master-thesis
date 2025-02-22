@@ -967,57 +967,57 @@ frota_2016_01 <- read_excel("1_raw_data/2_vehicle_fleet/2016_01_3_Frota_Por_UF_M
          date = make_date(2016,1,1))
 
 frota_2016_02 <- read_excel("1_raw_data/2_vehicle_fleet/2016_02_3_Frota_Por_UF_Municipio_Combustivel_FEV_2016.xlsx") %>% 
-  mutate(month = 1,
+  mutate(month = 2,
          year = 2016,
          date = make_date(2016,2,1))
 
 frota_2016_03 <- read_excel("1_raw_data/2_vehicle_fleet/2016_03_3_Frota_Por_UF_Municipio_Combustivel_MAR_2016.xlsx") %>% 
-  mutate(month = 1,
+  mutate(month = 3,
          year = 2016,
          date = make_date(2016,3,1))
 
 frota_2016_04 <- read_excel("1_raw_data/2_vehicle_fleet/2016_04_3_Frota_Por_UF_Municipio_Combustivel_ABR_2016.xlsx") %>% 
-  mutate(month = 1,
+  mutate(month = 4,
          year = 2016,
          date = make_date(2016,4,1))
 
 frota_2016_05 <- read_excel("1_raw_data/2_vehicle_fleet/2016_05_3_Frota_Por_UF_Municipio_Combustivel_MAI_2016.xlsx") %>% 
-  mutate(month = 1,
+  mutate(month = 5,
          year = 2016,
          date = make_date(2016,5,1))
 
 frota_2016_06 <- read_excel("1_raw_data/2_vehicle_fleet/2016_06_3_Frota_Por_UF_Municipio_Combustivel_JUN_2016.xlsx") %>% 
-  mutate(month = 1,
+  mutate(month = 6,
          year = 2016,
          date = make_date(2016,6,1))
 
 frota_2016_07 <- read_excel("1_raw_data/2_vehicle_fleet/2016_07_3_Frota_Por_UF_Municipio_Combustivel_JUL_2016.xlsx") %>% 
-  mutate(month = 1,
+  mutate(month = 7,
          year = 2016,
          date = make_date(2016,7,1))
 
 frota_2016_08 <- read_excel("1_raw_data/2_vehicle_fleet/2016_08_3_Frota_Por_UF_Municipio_Combustivel_AGO_2016.xlsx") %>% 
-  mutate(month = 1,
+  mutate(month = 8,
          year = 2016,
          date = make_date(2016,8,1))
 
 frota_2016_09 <- read_excel("1_raw_data/2_vehicle_fleet/2016_09_3_Frota_Por_UF_Municipio_Combustivel_SET_2016.xlsx") %>% 
-  mutate(month = 1,
+  mutate(month = 9,
          year = 2016,
          date = make_date(2016,9,1))
 
 frota_2016_10 <- read_excel("1_raw_data/2_vehicle_fleet/2016_10_3_Frota_Por_UF_Municipio_Combustivel_OUT_2016.xlsx") %>% 
-  mutate(month = 1,
+  mutate(month = 10,
          year = 2016,
          date = make_date(2016,10,1))
 
 frota_2016_11 <- read_excel("1_raw_data/2_vehicle_fleet/2016_11_3_-_combustivel_-novembro_-2016 (1).xlsx") %>% 
-  mutate(month = 1,
+  mutate(month = 11,
          year = 2016,
          date = make_date(2016,11,1))
 
 frota_2016_12 <- read_excel("1_raw_data/2_vehicle_fleet/2016_12_3_frota_por_uf_municipio_combustivel_dez_2016 (1).xlsx") %>% 
-  mutate(month = 1,
+  mutate(month = 12,
          year = 2016,
          date = make_date(2016,12,1))
 

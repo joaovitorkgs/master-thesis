@@ -9,27 +9,37 @@ output:
     toc_collapsed: true
     toc_depth: 4
     number_sections: true
-    theme: journal
+    theme: united
     code_folding: hide
     df_print: paged
     highlight: tango
-    
 ---
 
+```{=html}
 <style>
 div.answer {background-color:#f3f0ff; border-radius: 5px; padding: 20px;}
 div.comment {background-color:#F0F6FF; border-radius: 5px; padding: 20px;}
 
 </style>
+```
+
+```{=html}
 <style>
 div.gradingadvice {background-color:#a2bc89; border-radius: 5px; padding: 20px;}
 </style>
+```
+
+```{=html}
 <style>
 div.examplefeedback {background-color:#FFA500; border-radius: 5px; padding: 20px;}
 </style>
+```
+
+```{=html}
 <style>
 div.lookfor {background-color:#a389bc; border-radius: 5px; padding: 20px;}
 </style>
+```
 
 ```{r, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE,
@@ -89,15 +99,14 @@ pacman::p_load(
 
   # Specialized Analysis
   plm,          # Perform panel data analysis (fixed/random effects models)
-  deflateBr     # Deflate nominal Brazilian Reais using price indexes
+  deflateBR     # Deflate nominal Brazilian Reais using price indexes
 )
 
 ```
 
-
 ------------------------------------------------------------------------
 
-## Introduction
+# Introduction
 
 This document seems to outline the overall results I have achieved so far as part of my MT research and data work. It will focus on explaining some of the key data used, some descriptive statistics and results or information on the models attempted.
 
@@ -105,63 +114,38 @@ As a recap: my research question explores the projected impacted of changes in t
 
 Once this is achieved, the next step of the research will be to use a calculation method based on OECD, 2019 to calculate tax revenue scenarios based on taxes related to vehicle activity, vehicle stock, and energy consumption.
 
-### Descriptive statistics
+## Descriptive statistics
 
 During the initial data research, further descriptive statistics has been produced as a way of exploring the topic and what trends and important information might inform this thesis work.
 
-
-
 ------------------------------------------------------------------------
 
-## Data used
+# Data used
 
-### Overview
+## Overview
 
 All data used has been obtained from publicly available data from Brazilian official sources, including:
 
-- National Traffic Secretariat (2024): fleet size per vehicle type (monthly data on city level).
-- Sepcial Secretariat of the Federal Revenue of Brazil (RFB): income distribution and tax revenue.
-- Peixoto (2024): average vehicle prices by vehicle/fuel type (monthly data on national level).
-- Base dos Dados (2024): demographic and geographic data, including population size per city and state.
+-   National Traffic Secretariat (2024): fleet size per vehicle type (monthly data on city level).
+-   Special Secretariat of the Federal Revenue of Brazil (RFB): income distribution and tax revenue.
+-   Peixoto (2024): average vehicle prices by vehicle/fuel type (monthly data on national level).
+-   Base dos Dados (2024): demographic and geographic data, including population size per city and state.
 
 The data frames loaded below are already the product of the project's pipeline, including data scraping or downloading, cleaning and organizing for the purpose of this analysis.
 
 ```{r}
 
+setwd("C:/Users/joaov/Dropbox/R Assignments/master-thesis/")
+
+# Loading the data frames
+
 fleet_2013_2024_clean <- read_csv("./3_processed_data/fleet_2013_2024_id_clean.csv")
 price_df              <- read_csv("./3_processed_data/fipe_price_monthly_trends_deflated.csv")
 income_data_wide_uf   <- read_csv("./3_processed_data/income_data_wide_uf.csv")
 
-```
+# Further transformation for the models
 
-Information on the EV stock per fuel type
-
-```{r}
-stargazer(as.data.frame(fleet_2013_2024_clean),
-          type = "text")
-```
-
-Information on the passenger car prices per fuel type (values in deflated BRL)
-
-```{r}
-# 
-stargazer(as.data.frame(price_df),
-          type = "text")
-```
-
-Information on the income distribution in Brazil (values in deflated BRL)
-```{r}
-stargazer(as.data.frame(income_data_wide_uf),
-          type = "text")
-```
-
-For the models, the main data sets have been processed further. The processed data sets used in the models in the following sections are indicated below.
-
-<br>
-
-### Fleet size and population on city level
-
-```{r}
+## Organizing population data and adding months
 
 months <- fleet_2013_2024_clean %>% 
   arrange(date) %>%  
@@ -177,14 +161,6 @@ fleet_df <- fleet_2013_2024_clean %>%
   filter(log_electric >= 0) %>% 
   left_join(months, by="date")
 
-```
-
-<br>
-
-### Price information
-
-```{r}
-
 fleet_df_b_city <- fleet_df %>% 
   left_join(price_df, by = "date") 
 
@@ -199,6 +175,7 @@ fleet_df_b_uf <- fleet_df %>%
             gas        = sum(gas),
             population = sum(populacao))
 
+## Adding price information and grouping by state
 fleet_df_b_uf <- fleet_df %>% 
   left_join(price_df, by = "date") %>% 
   group_by(sigla_uf, date, year, month, months_nr) %>% 
@@ -222,49 +199,123 @@ fleet_df_b_uf <- fleet_df %>%
          log_ff       = log(gasoline+diesel),
          log_pop      = log(population))
 
-```
-
-<br>
-
-### Income Information
-
-```{r}
-
+## Adding income distribution data
 fleet_df_c <- fleet_df_b_uf %>% 
   left_join(income_data_wide_uf, by = c("year", "sigla_uf")) %>% 
   drop_na()
 
+
 ```
 
+## Descriptive statistics
 
+### EV stock and population size
 
-### Visualizing and explorign the data
+The table below has a summary of the data frame combining population size ("populacao") on city level with the existing fleet of passenger cars by fuel type. 
 
-Before starting the models, I tried to visualize the relationship between some key variables (population size, ev price, income levels) to see what would make sense to find in the model.
+```{r, results = 'asis'}
 
-#### Population size vs. EV stock
+fleet_2013_2024_clean <- fleet_2013_2024_clean %>% 
+  mutate(id_municipio = as.character(id_municipio))
 
-Population has a clear positive correlation, though this may be somewhat obvious. I am not yet entirely sure if I should move forward with this variable as a predictor.
+stargazer(as.data.frame(fleet_2013_2024_clean),
+          title="Table 1: Summary statistics of data on pop. size and vehicle stock",
+          column.sep.width = "15pt",
+          digits=0,
+          type = "html")
+
+```
+
+<br>
+
+Exploring the data visually, I find that population has a clear positive correlation with the EV fleet size, though this may be somewhat obvious. I am not yet entirely sure if I should move forward with this variable as a predictor.
 
 ```{r}
 ggplot(data = fleet_df_c, aes(x=population, y=electric)) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE, color = "red") + # Add linear regression line
-  ggtitle("Relationship between Population Size and EV stock per Brazilian States")+
+  ggtitle("EV Adoption vs. Population Size in in Brazilian States")+
   theme_bw() +
-  ylab("Electric Cars (log)") +
-  xlab("Average Taxable Income of the 100th Percentile (log)") +
+  ylab("Number of Registered Electric Vehicles (log)") +
+  xlab("Population Size (log)") +
   scale_x_continuous(trans = "log10", labels = scales::comma) + # Log scale for x-axis with meaningful labels
   scale_y_continuous(trans = "log10", labels = scales::comma) +  # Log scale for y-axis with meaningful labels
-  facet_wrap(~year, nrow = 3, ncol = 4)
+  facet_wrap(~year, nrow = 3, ncol = 4)  +
+  theme(
+    plot.title = element_text(size = 12),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 8),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
 
 ```
 
 <br>
 
-#### Income distribution vs. EV stock
+### Price information
 
-Average taxable income of the richest percentile also seems to have a correlation. This suggests that acquiring an EV seems to be inaccessible for most of the population.
+I have obtained a table with monthly prices of all vehicles being commercialized (new or used) in Brazil in a given month and year, from 2013 to 2022. The primary data is produced by FIPE, a research foundation that maintains a database on car prices to use as a parameter for individual transactions and valuation of any given car. I obtained this data from a secondary source (Peixoto, 2022), which scraped data from FIPE's website and made it publicly available.
+
+By grouping data based on each model fuel or traction type (e.g. electric, gasoline, ethanol or hybrid), I have obtained mean, median, minimum and maximal prices, as well as the number of movels available in a given month and year.
+
+```{r, results = 'asis'}
+
+stargazer(as.data.frame(price_df),
+          title="Table 2: Summary statistics of data on vehicle price",
+          column.sep.width = "3pt",
+          digits=0,
+          type = "html")
+
+```
+
+<br>
+
+When plotting the data, EV prices and EV stock seem to have some degree of correlation, suggesting that more EVs are bought as more affordable vehicles are available in the Brazilian market. However, the data points are oddly spread in the plot, as I do not have an explanation for these two clusters.
+
+I used data on the cheapest EV model ("min_price_electric") available in the Brazilian market in a given month, and the EV stock size in the corresponding month.
+
+```{r}
+fleet_df_c %>% 
+  filter(year > 2017) %>% 
+  group_by(date) %>% 
+  summarize(
+    ev_price = mean(min_ev)/1000,
+    electric = mean(electric)) %>% 
+  ggplot(aes(x=ev_price, y=electric)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "red") + # Add linear regression line
+  labs(
+    title = "EV Adoption vs. EV minimum price in Brazil (2018-2022)",
+  ) +
+  theme_bw() +
+  ylab("Number of Registered Electric Vehicles (log)") +
+  xlab("EV average price (thousand BRL)") +
+  scale_x_continuous(labels = scales::comma) + # Log scale for x-axis with meaningful labels
+  scale_y_continuous(trans = "log10", labels = scales::comma) +
+  theme(
+    plot.title = element_text(size = 12),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 8),
+    axis.text.x = element_text(angle = 0, hjust = 1)
+  )
+
+```
+
+### Income Information
+
+For data on income, I used data published by the Brazilian national treasury on income distribution. The original data set lists yearly data on different kinds of taxable income classes per income percentile. I have adjusted the values to show deflated BRL, and used only the bottom 10th percentile, the median, and the top 90 and 100 percentiles.
+
+```{r, results = 'asis'}
+
+stargazer(as.data.frame(income_data_wide_uf),
+          title="Table 3: Summary statistics of data on income distribution",
+          column.sep.width = "3pt",
+          digits=0,
+          type = "html")
+
+```
+
+When visualizing the data, the scatterplot below suggests that average taxable income of the richest percentile also seems to have a correlation with number of EVs in a given month. This suggests that acquiring an EV seems to be inaccessible for most of the population.
 
 ```{r}
 fleet_df_c %>% 
@@ -275,13 +326,19 @@ fleet_df_c %>%
   ggplot(aes(x=avg_taxable_income_100, y=electric)) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE, color = "red") + # Add linear regression line
-  ggtitle("Relationship between Average Income of the 100th Percentile and EV stock per Brazilian States")+
+  ggtitle("EV Adoption vs. Average income of top 100th Percentile in Brazilian States")+
   theme_bw() +
-  ylab("Electric Cars (log)") +
+  ylab("Number of Registered Electric Vehicles (log)") +
   xlab("Average Taxable Income of the 100th Percentile (log)") +
   scale_x_continuous(trans = "log10", labels = scales::comma) + # Log scale for x-axis with meaningful labels
   scale_y_continuous(trans = "log10", labels = scales::comma) +  # Log scale for y-axis with meaningful labels
-  facet_wrap(~year, nrow = 3, ncol = 4)
+  facet_wrap(~year, nrow = 3, ncol = 4) +
+  theme(
+    plot.title = element_text(size = 12),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 8),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
 
 ```
 
@@ -298,13 +355,20 @@ fleet_df_c %>%
   ggplot(aes(x=avg_taxable_income_50, y=electric)) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE, color = "red") + # Add linear regression line
-  ggtitle("Relationship between Average Income of the 50th Percentile and EV stock per Brazilian States")+
+  ggtitle("EV Adoption vs. Average income of the top 50th Percentile in Brazilian State")+
   theme_bw() +
-  ylab("Electric Cars (log)") +
+  ylab("Number of Registered Electric Vehicles (log)") +
   xlab("Average Taxable Income of the 50th Percentile (log)") +
   scale_x_continuous(trans = "log10", labels = scales::comma) + # Log scale for x-axis with meaningful labels
   scale_y_continuous(trans = "log10", labels = scales::comma) +  # Log scale for y-axis with meaningful labels
-  facet_wrap(~year, nrow = 3, ncol = 4)
+  facet_wrap(~year, nrow = 3, ncol = 4)+
+  theme(
+    plot.title = element_text(size = 12),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 8),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
 ```
 
 <br>
@@ -323,45 +387,144 @@ fleet_df_c %>%
   ggplot(aes(x=avg_taxable_income_10, y=electric)) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE, color = "red") + # Add linear regression line
-  ggtitle("Relationship between Average Income of the 10th Percentile and EV stock per Brazilian States")+
+  ggtitle("EV Adoption vs. Average income of the bottom 10th Percentile in Brazilian State")+
   theme_bw() +
-  ylab("Electric Cars (log)") +
+  ylab("Number of Registered Electric Vehicles (log)") +
   xlab("Average Taxable Income of the 50th Percentile (log)") +
   scale_x_continuous(labels = scales::comma) + # Log scale for x-axis with meaningful labels
   scale_y_continuous(trans = "log10", labels = scales::comma) +  # Log scale for y-axis with meaningful labels
-  facet_wrap(~year, nrow = 3, ncol = 4)
+  facet_wrap(~year, nrow = 3, ncol = 4)+
+  theme(
+    plot.title = element_text(size = 12),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 8),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
 
 ```
 
 <br>
 
-#### EV average prices vs. EV stock
+------------------------------------------------------------------------
 
-EV prices and EV stock might be correlated as well, suggesting that more EVs are bought as more affordable vehicles are available in the Brazilian market, though the data points are oddly spread in the plot, as I do not have an explanation for these two clusters. 
+# Models
 
-I used data on the cheapest EV model available in the Brazilian market in a given month, and the EV stock size in the corresponding month.
+In order to project the EV stock in Brazil in relation to future years by using past data, I have attempted to establish models that can correctly predict the information already at hand. The goal is to find good predictors to explain the growth in the EV stock, which are statistically significant, and that have a logical mechanism that explains the relationship. Based on the coefficients found and the accuracy of the model, I will then create synthetic data which extrapolates the current EV stock to the future years, which will then be used to examine the impact of electrifying the passenger vehicle fleet in Brazil on tax revenue.
 
-```{r}
-fleet_df_c %>% 
-  filter(year > 2017) %>% 
-  group_by(date) %>% 
-  summarize(
-    ev_price = mean(min_ev)/1000,
-    electric = mean(electric)) %>% 
-  ggplot(aes(x=ev_price, y=electric)) +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE, color = "red") + # Add linear regression line
-  ggtitle("Relationship between EV price and EV stock per Month (2017-2022)")+
-  theme_bw() +
-  ylab("Electric Cars (log)") +
-  xlab("EV average price (thousand BRL)") +
-  scale_x_continuous(labels = scales::comma) + # Log scale for x-axis with meaningful labels
-  scale_y_continuous(trans = "log10", labels = scales::comma) # Log scale for y-axis with meaningful labels
+## Predictors
+
+The predictors chosen thus far and their rationale were the following:
+
+-   **Population size**: bigger cities and states are expected to have a more developed infrastructure, which would include charging infrastructure, as well as a bigger demand and offer for EVs.
+
+-   **Fossil fuel Vehicles** : instead of owning multiple cars, I would expect a gradual substitution of vehicles running on fossil fuels (chiefly gasoline) by EVs as the stock of the latter increases.
+
+-   **Time**: due to recent trends, evolving consumer preferences, markets and available technologies, as well as a growing concern with climate change in recent years and the negative impacts of CO2 emitting cars, time (number of months passed) was included as a predictor.
+
+-   **Vehicle prices**: the first EV models available in 2013 were twice as expensive as the cheapest models currently available. As the EV become more affordable, the overall EV stock is expected to increase.
+
+-   **Income**: in spite of recent EV models becoming gradually less expensive, the cost of the cheapest models still is significantly higher than that of gasoline or hybrid vehicles. This would mean that cities and states with a higher average income of the top percentiles of the population would have a bigger EV stock as well.
+
+These predictors might also have some degree of multicollinearity. For example, larger cities and states tend to also be richer. Population growth and price changes are also correlated with the predictor related to time. This means that the predictors might introduce bias or have a limited capacity of explaining the increase in EVs in the models.
+
+## Linear regressions
+
+The first and most simple models were simple linear regressions (OLS), where the EV stock (the log-transformed number of registered EVs in a given month in all Brazilian states) was regressed on population size and time. Another model includes the interaction between time and population, as well as with the number of other kinds of vehicles in the fleet.
+
+```{r, results = 'asis'}
+
+model1 <- lm(log(electric) ~ log(population) * months_nr, 
+             data = fleet_df_c)
+
+model2 <- lm(log(electric) ~ log(population) * months_nr + log(min_ev) + log(mean_gas) + log(mean_hyb),
+             data = fleet_df_c)
+
+model3 <- lm(log(electric) ~ log(population) * months_nr + log(min_ev) + log(mean_gas) + log(mean_hyb) +
+               log(avg_taxable_income_50) + log(avg_taxable_income_100),
+             data = fleet_df_c)
+
+
+stargazer(model1, model2, model3, type = "html",
+          title=
+            "Table 4: EV stock regressed on population size, time, price & income (linear regression)",
+          single.row= FALSE,
+          column.labels =c("Model 1","Model 2", "Model 3", "Model 4"),
+          covariate.labels=c("Population (log)",
+                             "Months",
+                             "Vehicle price - electric (log)",
+                             "Vehicle price - gasoline (log)",
+                             "Vehicle price - hybrid (log)",
+                             "Avg. Income - 50th perc. (log)",
+                             "Avg. Income - 100th perc. (log)",
+                             "Vehicle price - hybrid (log)",
+                             "Months : Population (log)"),
+          keep.stat = c("rsq", "f"),
+          notes.align = "l",
+          dep.var.labels=c("EV stock (log)"))
 
 ```
 
+<br>
 
-------------------------------------------------------------------------
+**Interpretation:**
+
+The above regression tables shows state-level data where the EV stock is regressed on log-transformed population, months, average car prices per vehicle type and an interactions between population and time-related variable.
+
+The regression with the most variables seems to perform well, based on the statistical significance of the coefficients, as well as the R² and F-Statistic values. It corroborates some of the initial assumptions and expected relationships for most of the independent variables, including increases on population size, time effects, and the influence of prices of vehicles, which also have the correct direction (e.g. EV prices have a negative coefficient).
+
+As for the effect of income — measured here as the annual average taxable income of the 50th and 100th top percentiles — in each state, the median average income seems to have a positive correlation, but the average income of the top earners in Brazilian states has no statistically significant effect, with an unexpected negative correlation.
+
+## Panel Data and Fixed-Effects
+
+As an improvement to the linear regressions above, the following regressions incorporate fixed effects for the used units of observations (i.e. states), in order to focus on variance within units and account for the natural and significant differences between states.
+
+```{r, results = 'asis'}
+
+
+panel_data <- pdata.frame(fleet_df_c, index = c("sigla_uf", "date"))
+
+fe_model_1 <- plm(log(electric) ~ log(population) + as.factor(months_nr),
+                  data  = panel_data,
+                  model = "within")
+
+fe_model_2 <- plm(log(electric) ~ log(population) + log(min_ev) + log(mean_gas) + log(mean_hyb) + as.factor(months_nr),
+                  data  = panel_data,
+                  model = "within")
+
+fe_model_3 <- plm(log(electric) ~ log(population) + log(min_ev) + log(mean_gas) + log(mean_hyb) + log(avg_taxable_income_50) + log(avg_taxable_income_100) + as.factor(months_nr),
+                  data  = panel_data,
+                  model = "within")
+
+
+stargazer(fe_model_1, fe_model_2, fe_model_3, type = "html",
+          title = "Table 5: EV stock regressed on population size, time, vehicle prices and income with panel data and fixed effects",
+          single.row = FALSE,
+          dep.var.labels = c("EV stock (log)"),
+          covariate.labels=c("Population (log)",
+                             "Vehicle price - electric (log)",
+                             "Vehicle price - gasoline (log)",
+                             "Vehicle price - hybrid (log)",
+                             "Avg. Income - 50th perc. (log)",
+                             "Avg. Income - 100th perc. (log)"),
+          column.labels = c("Model 1", "Model 2", "Model 3"),
+          keep.stat = c("rsq", "f"),
+          notes.align = "l",
+          omit = "as.factor\\(months_nr\\)[0-9]+")
+
+
+```
+
+<br>
+
+**Interpretation:**
+
+The regression with panel data and fixed-effects has a better performance, with the R² value in all three models being aronud 0.93. It also indicates an increased effect from population and vehicle prices, especially for the price of EVs, when compared to the linear regressions with no fixed effects. The results from table 5 suggest that, on average, a 1% decrease on the average vehicle price for the cheapest EV available on the market on a given month is associated to a 5.4% increase on the EV stock.
+
+As for the effect of income, the median average income seems to have a now a negative effect, as well as the average income of the top earners in each state. This is an unexpected effect of the correlation between income and EV stock.
+
+
+
 
 
 

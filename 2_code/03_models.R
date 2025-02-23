@@ -135,19 +135,15 @@ fe_model_1 <- plm(log(electric) ~ log(population) + as.factor(months_nr),
                   data  = panel_data,
                   model = "within")
 
-fe_model_2 <- plm(log(electric) ~ log(mean_ev) + log(avg_taxable_income_100) + as.factor(months_nr),
+fe_model_2 <- plm(log(electric) ~ log(population) + log(min_ev) + log(mean_gas) + log(mean_hyb) + as.factor(months_nr),
                   data  = panel_data,
                   model = "within")
 
-fe_model_3 <- plm(log(electric) ~ log(population) + log(gasoline) + log(diesel) + log(ethanol) + as.factor(months_nr),
+fe_model_3 <- plm(log(electric) ~ log(population) + log(min_ev) + log(mean_gas) + log(mean_hyb) + log(avg_taxable_income_50) + log(avg_taxable_income_100) + as.factor(months_nr),
                   data  = panel_data,
                   model = "within")
 
-fe_model_4 <- plm(log(electric) ~ log(mean_ev) + log(avg_taxable_income_100) + log(population) + log(gasoline) + log(diesel) + log(ethanol) + as.factor(months_nr),
-                  data  = panel_data,
-                  model = "within")
-
-stargazer(fe_model_1, fe_model_2, fe_model_3, fe_model_4, type = "text")
+stargazer(fe_model_1, fe_model_2, fe_model_3, type = "text")
 
 stargazer(fe_model_1, fe_model_2, fe_model_3, fe_model_4, type = "html",
           title="Fixed-Effects Linear Regression Results: Panel Data", single.row=TRUE,

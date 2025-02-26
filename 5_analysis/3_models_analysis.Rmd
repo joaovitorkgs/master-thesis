@@ -859,3 +859,124 @@ vip(cv_glmnet, num_features = 20, geom = "point")
 This shows the most influential features in the model were different from the linear regressions with no regularized estimate coefficients. In this plot, the log transformed fleet size of combustion-engine vehicles (`log_ff`) is the most important predictor, followed by the amount of vehicles with hybrid or ethanol engines (`ethanol`) in the a given state. These two variables might just be proxies for population size.
 
 Additionally, time-related variables (`years` and `months_nr`) also are relevant in the model, followed by the average yearly taxable income of the 50th and 100th percentiles (`avg_taxable_income_50` and `avg_taxable_income_100`, and specific Brazilian states as dummy variables (`sigla_uf`).
+
+
+<br>
+
+## Multivariate Adaptive Regression Splines
+
+This model attempts to run algorithms with nonlinear model terms, with interaction effects, squared terms and other transformations, such as step functions. Multivariate Adaptive Regression Splines (MARS) will be employed to explore nonlinear model terms with automatic functions, by using the **earth** package.
+
+### Models without interaction
+
+
+```{r}
+
+fleet_df_d <- fleet_df_c %>% 
+  select(-c(population, date, year))
+
+# Creating the MARS model object
+mars1 <- earth(
+  log(electric) ~ .,
+  data = fleet_df_d
+)
+
+summary(mars1)
+
+```
+
+<br>
+
+The summary of the MARS model indicates a high value for its R², which is a good performance for the model, and 15 of the predictors have been kept. The list of coefficients also show the knots for the step functions.
+
+```{r}
+
+# Ploting the model selection
+plot(mars1, which = 1)
+
+```
+
+<br>
+
+The summary of the MARS model indicates a high value for its R², which is a good performance for the model, and 15 of the predictors have been kept. The list of coefficients also show the knots for the step functions.
+
+### Models with interaction
+
+
+Hyperparameters minimize prediction error by choosing how many terms in the final model and the complexity of the interactions. Grid search provides a set of different combinations of these two combinations. This is intended to prevent overfitting (the model does well for training data, but not well for testing or validating data) and underfitting (where the model is too simple to capture relevant patterns.)
+
+```{r}
+mars2 <- earth(
+  log(electric) ~ .,
+  data = fleet_df_d,
+  degree = 2
+)
+
+# Summary of the most important predictors and interactions
+summary(mars2) %>% .$coefficients %>% head(10)
+
+# Preparing a grid with hyperparameters
+hyper_grid <- expand.grid(
+  degree = 1:3, 
+  nprune = seq(2, 100, length.out = 10) %>% floor()
+)
+
+# Training the algorithm 
+set.seed(123)  # for reproducibility
+cv_mars <- train(
+  x = subset(fleet_df_d, select = -electric),
+  y = fleet_df_d$electric,
+  method = "earth",
+  metric = "RMSE",
+  trControl = trainControl(method = "cv", number = 10),
+  tuneGrid = hyper_grid
+)
+
+# Finding the best hyperparameters
+cv_mars$bestTune
+cv_mars$results %>%
+  filter(nprune == cv_mars$bestTune$nprune, degree == cv_mars$bestTune$degree)
+
+# Plotting the RMSE according to the number of terms
+ggplot(cv_mars)
+
+
+# Mapping out the most relevant predictors
+p1 <- vip(cv_mars, num_features = 25, geom = "point", value = "gcv") + ggtitle("GCV")
+p2 <- vip(cv_mars, num_features = 25, geom = "point", value = "rss") + ggtitle("RSS")
+
+# Population and log_pop are coming up as the most important predictors
+# Maybe I should use a different predictor instead?
+
+
+gridExtra::grid.arrange(p1, p2, ncol = 2)
+
+# Check for interactions
+cv_mars$finalModel %>%
+  coef() %>%  
+  broom::tidy() %>%  
+  filter(stringr::str_detect(names, "\\*")) 
+# So far, the model is not yielding any relevant variables
+
+
+cv_mars$finalModel %>%
+  coef() %>%  
+  broom::tidy() %>%  
+  filter(stringr::str_detect(names, "\\*")) 
+
+# Construct partial dependence plots
+p1 <- partial(cv_mars, pred.var = "months_nr", grid.resolution = 10) %>% 
+  autoplot()
+p2 <- partial(cv_mars, pred.var = "log_pop", grid.resolution = 10) %>% 
+  autoplot()
+p3 <- partial(cv_mars, pred.var = c("months_nr", "log_pop"), 
+              grid.resolution = 10) %>% 
+  plotPartial(levelplot = FALSE, zlab = "yhat", drape = TRUE, colorkey = TRUE, 
+              screen = list(z = -20, x = -60))
+
+# Display plots side by side
+gridExtra::grid.arrange(p1, p2, p3, ncol = 3)
+
+
+
+```

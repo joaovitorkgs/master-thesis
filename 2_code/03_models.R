@@ -381,7 +381,7 @@ p3 <- partial(cv_mars, pred.var = c("population", "avg_taxable_income_100"),
 gridExtra::grid.arrange(p1, p2, p3, ncol = 3)
 
 
-?rsample
+rsample
 # get attrition data
 df <- rsample::attrition %>% mutate_if(is.ordered, factor, ordered = FALSE)
 
@@ -532,5 +532,18 @@ fleet_df_c %>%
 
 
 
-## 4. Projections --------------------------------------------------------------
+## 4. ARIMA --------------------------------------------------------------
 
+df_arima <- fleet_df_c %>%
+  ungroup() %>% 
+  group_by(date) %>% 
+  summarize(electric = sum(electric)) %>% 
+  ungroup() %>% 
+  select(electric, date) 
+
+ggplot(df_arima, aes(x = date, y = log(electric))) +
+  geom_point()
+
+diff(df_arima)
+
+  

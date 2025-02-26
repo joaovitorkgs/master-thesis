@@ -28,7 +28,7 @@ pacman::p_load(
   
   # Geographic and Spatial Data; specialized packages for Brazil
   geobr,        # Access Brazilian geographic data (e.g., shapefiles)
-  deflateBr,     # Deflate nominal Brazilian Reais using price indexes
+  deflateBR,     # Deflate nominal Brazilian Reais using price indexes
   sf,           # Handle spatial/geographic data in R
   
   # Reporting and Tables

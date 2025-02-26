@@ -358,6 +358,8 @@ df_federal_cnae_date <- df_federal_cnae %>%
     ano_mes_date = as.Date(paste(ano, mes, "01", sep = "-")) # Create date column
   ) 
 
+
+
 # 3.1.1 All fuel taxes levied on fuel-related activities -----------------------
 
 # Selecting all taxes which are levied on fuel sales (as per Esteves, 2020, p.6)

@@ -26,17 +26,13 @@ fleet_df_nov24 <- read_excel("1_raw_data/2_vehicle_fleet/2024-11_D_Frota_por_UF_
 state_df <- geobr::read_state(year = 2020,showProgress = FALSE) 
 
 
+# 2.3. Files from BigQuery and project pipeline --------------------------------
 
-(25*12*10)
-
-
-
-
-
-# 2.3. Files from BigQuery ----------------------------------------------------
-
-source("./2_code/01_descriptive-demographics.R")
-
+if (file.exists("./1_raw_data/0_demographics/pop_city.csv")) {
+  pop_city <- read_csv("1_raw_data/0_demographics/pop_city.csv")
+} else {
+  source("./2_code/01_descriptive-demographics.R")
+}
 
 # 3. Manipulating data to generate plots and tables ----------------------------
 
@@ -95,6 +91,12 @@ all_electric_vehicles_dfs <- create_electric_vehicles_dfs(fleet_dfs)
 
 fleet_electric_vehicles_all_years <- bind_rows(all_electric_vehicles_dfs)
 
+if (!file.exists("./3_processed_data/fleet_electric_vehicles_all_years.csv")) {
+  write_csv(fleet_electric_vehicles_all_years,
+            file = "./3_processed_data/fleet_electric_vehicles_all_years.csv")
+} else {
+  print("File already exists in the repository")
+}
 
 
 
@@ -114,14 +116,6 @@ fleet_electric_vehicles_all_years <- fleet_electric_vehicles_all_years %>%
 
 # Update variable name
 fleet_electric_vehicles_all_years$name_state <- tolower(fleet_electric_vehicles_all_years$name_state)
-
-
-if (!file.exists("./3_processed_data/fleet_electric_vehicles_all_years.csv")) {
-  write_csv(fleet_electric_vehicles_all_years,
-            file = "./3_processed_data/fleet_electric_vehicles_all_years.csv")
-} else {
-  print("File already exists in the repository")
-}
 
 
 # Adding State population to the data frame

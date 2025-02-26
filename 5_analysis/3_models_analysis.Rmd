@@ -17,27 +17,7 @@ output:
 
 ```{=html}
 <style>
-div.answer {background-color:#f3f0ff; border-radius: 5px; padding: 20px;}
 div.comment {background-color:#F0F6FF; border-radius: 5px; padding: 20px;}
-
-</style>
-```
-
-```{=html}
-<style>
-div.gradingadvice {background-color:#a2bc89; border-radius: 5px; padding: 20px;}
-</style>
-```
-
-```{=html}
-<style>
-div.examplefeedback {background-color:#FFA500; border-radius: 5px; padding: 20px;}
-</style>
-```
-
-```{=html}
-<style>
-div.lookfor {background-color:#a389bc; border-radius: 5px; padding: 20px;}
 </style>
 ```
 
@@ -52,8 +32,6 @@ knitr::opts_chunk$set(echo = TRUE,
 knitr::opts_knit$set(root.dir = "C:/Users/joaov/Dropbox/R Assignments/master-thesis/")
 
 ```
-
-------------------------------------------------------------------------
 
 ```{r, include = T}
 pacman::p_load(
@@ -120,9 +98,221 @@ This research draws mostly from methods discussed in these two sources:
 
 -   Boehmke, B., & Greenwell, B.M. (2019). Hands-On Machine Learning with R (1st ed.). Chapman and Hall/CRC. <https://doi.org/10.1201/9780367816377>
 
-## Descriptive statistics
+------------------------------------------------------------------------
 
-During the initial data research, further descriptive statistics has been produced as a way of exploring the topic and what trends and important information might inform this thesis work.
+# Context
+
+## Stock of passenger cars
+
+Brazil has had a significant growth of EVs in the past 10 years. The introduction of more affordable vehicles and a more diverse set of models, as well as changing consumer preferences, has led to a growth from 1600 registered EVs in 2013 to more than 20,600 as of early 2025. While the number of other vehicles has also continued to grow, as indicated in the plot below, this growth of the EV fleet could point to an early stage of a trend where these vehicles can take up a larger share of the country's fleet.
+
+Considering the widespread adoption of cars with combustible fossiles and hybrid cars (gasoline and ethanol), as well as the policies in place to incentivize production and sales of hybrid vehicles, this trend is a remarkable shift in the market of passenger cars in Brazil.
+
+
+```{r}
+setwd("C:/Users/joaov/Dropbox/R Assignments/master-thesis/")
+yearly_results_agg_long <- read_csv("3_processed_data/fleet_yearly_agg_long.csv")
+
+ggplot(yearly_results_agg_long, aes(x = as.integer(year), y = Count, color = Category)) +
+  geom_line(linewidth = 2) +
+  geom_point(size = 3) +
+  theme_bw() +
+  scale_x_continuous(breaks = seq(2013, 2024, by = 1)) +
+  scale_y_continuous(
+    trans = "log10",
+    breaks = scales::trans_breaks("log10", function(x) 10^x), # Powers of 10
+    labels = scales::comma # Readable labels with commas
+  ) +
+  theme(
+    panel.grid.major.y = element_line(color = "gray", linetype = "dashed"), # Dashed grid lines for y-axis
+    panel.grid.minor.y = element_blank() # Remove minor grid lines for clarity
+  ) +
+  labs(
+    x = "Year",
+    y = "Number of Registered Vehicles",
+    title = "Evolution of Registered Vehicles in Brazil per Combustible Type",
+    subtitle = "Source: National Traffic Secretariat, 2024",
+    color = "Category"
+  )
+
+```
+<br>
+
+## Geographic Distribution of EVs
+
+The adoption of EVs has remained heterogeneous among Brazilian cities and states. Factors such as income, level of urbanisation, population size and density, consumer preferences, and available infrastructure may play a role. The plots below illustrate different distributions of EVs among states (considering total fleet, EV per capita, and share of EVs as part of the total fleet of passenger cars).
+
+
+```{r}
+
+setwd("C:/Users/joaov/Dropbox/R Assignments/master-thesis/")
+
+fleet_electric_vehicles_all_years <- read_csv("3_processed_data/fleet_electric_vehicles_all_years.csv")
+pop_city <- read_csv("1_raw_data/0_demographics/pop_city.csv")
+state_df <- geobr::read_state(year = 2020,showProgress = FALSE) 
+
+
+# Create a string to use as common key to join the data frames
+state_df$UF <- state_df$name_state %>%
+  stringi::stri_trans_general("Latin-ASCII") %>%
+  toupper()
+
+# Join electric vehicle df with geographic info on the states
+fleet_electric_vehicles_all_years <- fleet_electric_vehicles_all_years %>% 
+  left_join(state_df, by = "UF") %>% 
+  select(code_state, abbrev_state, name_state, code_region, name_region, geom, total_electric_vehicles, total_vehicles, percentage, year) 
+
+# Update variable name
+fleet_electric_vehicles_all_years$name_state <- tolower(fleet_electric_vehicles_all_years$name_state)
+
+
+# Adding State population to the data frame
+state_pop <- pop_city %>% 
+  group_by(sigla_uf) %>% 
+  summarize(total_pop = sum(populacao)) %>% 
+  rename(abbrev_state = sigla_uf)
+
+electric_vehicles_per_state <- fleet_electric_vehicles_all_years %>% 
+  filter(year == 2022) %>% 
+  left_join(state_pop, by = "abbrev_state")
+
+electric_vehicles_per_state <- electric_vehicles_per_state %>% 
+  mutate(vehicle_per_capita = total_vehicles/total_pop,
+         electric_vehicle_per_capita = total_electric_vehicles/total_pop)
+
+# Convert the df to generate the map
+electric_vehicles_per_state <- st_as_sf(electric_vehicles_per_state)
+
+# Update the df to make the percentage column numeric
+electric_vehicles_per_state$percentage_num <- as.numeric(sub("%", "", electric_vehicles_per_state$percentage))
+
+# Create a variable for the theme in the plots
+no_axis <- theme(axis.title=element_blank(),
+                 axis.text=element_blank(),
+                 axis.ticks=element_blank())
+
+# Percentage of electric vehicles per State
+
+options(scipen = 999)
+
+ggplot() +
+  geom_sf(data=electric_vehicles_per_state, aes(fill=total_electric_vehicles), color=NA, size=.15) +
+  labs(
+    title = "EV Stock in Brazil in 2024",
+    subtitle = "Total registered Electrical Vehicles per State",
+    fill = "Total Vehicles") +
+  geom_sf_text(data=electric_vehicles_per_state, aes(label=abbrev_state), size=2, color="black") +
+  scale_fill_distiller(palette="Purples", name="Total Vehicles", direction = 1, labels = scales::comma_format()) + 
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 8),
+    panel.grid = element_blank(),
+    plot.background = element_rect(fill = "#ffffff", color = NA)
+  ) +
+  no_axis
+
+```
+
+<br>
+
+While useful to show the distribution of EVs in the country, the states with a darker shade of blue above are also the states with the larger population sizes in Brazil. 
+
+
+```{r}
+# Total Vehicles per Capita
+ggplot() +
+  geom_sf(data=electric_vehicles_per_state, aes(fill=electric_vehicle_per_capita), color=NA, size=.15) +
+  labs(
+    title = "EV stock in Brazil in 2024",
+    subtitle = "Registered EVs per Capita per State",
+    fill = "Vehicles per Capita") +
+  geom_sf_text(data=electric_vehicles_per_state, aes(label=abbrev_state), size=2, color="black") +
+  scale_fill_distiller(palette="Blues", name="Electric Vehicles per Capita", direction = 1) + 
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 8),
+    panel.grid = element_blank(),
+    plot.background = element_rect(fill = "#ffffff", color = NA)
+  ) +
+  no_axis
+
+```
+
+<br>
+
+When looking into EV per capita, no clear trends emerge from the data. The states with a darker shade of blue (showing a bigger share of EVs per capita) may point to states with a greater level of urbanization (as PR and its capital, Curitiba, or the country's capital, Brasilia), or to specific local policies.
+
+```{r}
+
+# Share of EVs as part of the total vehicle fleet
+ggplot() +
+  geom_sf(data=electric_vehicles_per_state, aes(fill=percentage_num), color=NA, size=.15) +
+  labs(
+    title = "EV stock in Brazil in 2024",
+    subtitle = "EV fleet percentage of total vehicle fleet by Brazilian State",
+    fill = "Vehicles per Capita") +
+  geom_sf_text(data=electric_vehicles_per_state, aes(label=abbrev_state), size=2, color="black") +
+  scale_fill_distiller(palette="BuPu", name="% of Total Fleet", direction = 1) + 
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 8),
+    panel.grid = element_blank(),
+    plot.background = element_rect(fill = "#ffffff", color = NA)
+  ) +
+  no_axis
+
+```
+
+<br>
+
+Finally, exploring the data on the share of vehicles in each state which are electrical, a similar pattern emerges when comparing plots 3 and 4. 
+
+<br>
+
+## Tax revenue
+
+Based on this data and on the persepctive of growing EV fleets, especially in the more populated, dense, and urbanized regions of the country, the future adoption of EVs in the place of passenger cars with combustion engines might represent a change in the tax revenue which currently is levied from fuel sales, vehicle stock and activity from conventional gasoline or hybrid vehicles.
+
+To illustrate this, the plot below shows the trend of how the aggregate tax revenue from the past ten years related to fuel sales has changed and what trends there might be. Thus far, the only relevant external shock has been that of the COVID-19 pandemic, but the data on (nominal) tax revenue seems to be growing steadily.
+
+
+```{r}
+setwd("C:/Users/joaov/Dropbox/R Assignments/master-thesis/")
+federal_gasstation_fueltaxes <- read_csv("3_processed_data/taxrev_federal_gasstation_fueltaxes.csv")
+
+
+ggplot(federal_gasstation_fueltaxes, aes(x = ano_mes_date,  y = fuel_taxes/1000000000)) +
+  geom_line(linewidth = 1) +  # Line plot for each 'tipo_consumo'
+  theme_bw() +                  # Clean theme
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +  # Show only the first month of each year
+  scale_y_continuous(labels = scales::comma) +               # Format y-axis labels
+  labs(
+    x = "Year",
+    y = "Total Tax Revenue per Month (Billion BRL)",
+    title = "Total Federal Tax Revenue levied on Fuel-Related Economic Activities",
+    subtitle = "Source: Special Secretariat of the Federal Revenue of Brazil (RFB), 2024",
+    caption = "Note: Data related to firms registered under G category only, which includes gas stations and retail sale of fuels."
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),  # Tilt x-axis labels
+    plot.caption = element_text(hjust = 0))
+
+```
+
+<br>
+
+With climate change as a backdrop, combined with technology changes, the effects of the 2024 tax reform, and potential shifts on consumer preferences, this trend on fuel sales and usage of fossil fuels may change in the future. The goal of this research is to quantify this potential change and shift on tax revenue trends, based on projections of potential growth of the EV fleet, and its impact on tax revenue given the current tax policies and rates in place, with policy recommendations to maintal fiscal balance while still incentivising climate mitigation policies in the Brazilian transport sector.
+
+The sections below describe the data used to better understand the underlying factors driving this trend on the adoption of EVs, as well potential predictors of future trends and changes in the EV stock, which will also be used to extrapolate currently yearly data and calculate potential tax revenue changes in the coming 10-15 years.
 
 ------------------------------------------------------------------------
 
@@ -212,6 +402,8 @@ fleet_df_c <- fleet_df_b_uf %>%
 
 
 ```
+
+------------------------------------------------------------------------
 
 ## Descriptive statistics
 
@@ -418,8 +610,6 @@ fleet_df_c %>%
 
 In order to project the EV stock in Brazil in relation to future years by using past data, I have attempted to establish models that can correctly predict the information already at hand. The goal is to find good predictors to explain the growth in the EV stock, which are statistically significant, and that have a logical mechanism that explains the relationship. Based on the coefficients found and the accuracy of the model, I will then create synthetic data which extrapolates the current EV stock to the future years, which will then be used to examine the impact of electrifying the passenger vehicle fleet in Brazil on tax revenue.
 
-## Predictors
-
 The predictors chosen thus far and their rationale were the following:
 
 -   **Population size**: bigger cities and states are expected to have a more developed infrastructure, which would include charging infrastructure, as well as a bigger demand and offer for EVs.
@@ -533,11 +723,12 @@ As for the effect of income, the median average income seems to have a now a neg
 
 ## Regularized Regressions
 
-A further step in the analysis was to regularized the estimate coefficients, to reduce variance and decrease out of sample error. The following code shows applications of the ridge regression to add a tuning parameter (`lambda`) to force correlated coefficients and less important predictors toward zero, thus reducing collinearity. Additionally, a lasso penalty (least absolute shrinkage and selection operator) was also introduced, to push correlated coefficients and irrelevant predictors to zero, using automated feature selection.
+A further step in the analysis was to regularized the estimate coefficients, to reduce variance and decrease out of sample error. The following code shows applications of the ridge regression, in which a tuning parameter (`lambda`) has been added to force correlated coefficients and less important predictors toward zero, thus reducing collinearity. Additionally, a Lasso (least absolute shrinkage and selection operator) penalty was also introduced, to push correlated coefficients and irrelevant predictors to zero, using automated feature selection.
+
+For this section of analysis, additional features were included to the data set, such as mean, median and minimum prices for EVs, hybrid and gasoline vehicles; the fleet size for vehicles of all engine/fuel types; as well as the log-transformed population size (`log_pop`) and size of the vehicle stock with combustion engines (`log_ff`), and the ratio of vehicles with combustion engines per capita (`ff_pc`).
 
 The goal of using these methods is to identifying a model where the MSE (Mean Squared Error) is minimized. In this case, the MSE will be used to determine the statistical significance of the factors or predictors under study.
 
-For this section of analysis, additional features were included to the data set, such as mean, median and minimum prices for EVs, hybrid and gasoline vehicles; the fleet size for vehicles of all engine/fuel types; as well as the log-transformed population size (`log_pop`) and size of the vehicle stock with combustion engines (`log_ff`), and the ratio of vehicles with combustion engines per capita (`ff_pc`).
 
 ```{r}
 
@@ -586,7 +777,7 @@ lasso$lambda.1se
 
 <br>
 
-This might mean the algorithm was unable to determine an optimal regularization parameter for the data set being used, either because the model is not converging to any of the attempted `lambda` values, or because the multicollinearity among the predictors makes it difficult for the algorithm to determine the appropriate `lambda` value. Also, given the good performance of the previous linear regressions, it might mean that the model is overfitted, i.e. it performs well to explain the relationship between independent and dependent variables with the data existing, but it performs poorly with new data.
+This might mean that the algorithm was unable to determine an optimal regularization parameter for the data set being used, either because the model is not converging to any of the attempted `lambda` values, or because the multicollinearity among the predictors makes it difficult for the algorithm to determine the appropriate `lambda` value. Also, given the good performance of the previous linear regressions, it might mean that the model is overfitted, i.e. it performs well to explain the relationship between independent and dependent variables with the data existing, but it performs poorly with new data.
 
 Following Boehmke & Greenwell (2019), a workaround to this was to use the **caret** package to automate the tuning process (i.e. chosing the parameters to optimize the model and find the lowest regularized MSE). The code output below shows the chosen `lambda` value, which penalizes the existing predictors; and the `alpha` value (which determines whether the **glmnet** package should perform a ridge (`alpha = 0`), lasso (`alpha = 1`) or elastic net (`0 < alpha < 1`) model.
 

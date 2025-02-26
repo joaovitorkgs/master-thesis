@@ -61,31 +61,36 @@ pacman::p_load(
   dplyr,        # Data manipulation: filtering, summarizing, mutating, and more
   tidyr,        # Data tidying and reshaping: pivoting, handling missing values
   janitor,      # Clean messy data (e.g., column names) and create summary tables
-  stringr,      # Simple and consistent string manipulation functions
-  stringi,      # Advanced string manipulation with Unicode support
-  lubridate,    # Simplify date and time parsing and manipulation
-
+  
   # Data Import and Export
   readr,        # Read flat files (CSV, TSV) into tibbles
   readxl,       # Read Excel files (.xls, .xlsx) into data frames
   basedosdados, # Access Brazilian public data via BigQuery
   httr,         # Perform HTTP requests to interact with web APIs
   archive,      # Extract files from compressed archives (.zip, .tar.gz)
-
+  
   # Data Visualization
   ggplot2,      # Create customizable data visualizations using the grammar of graphics
   scales,       # Format axes and legends (e.g., percentages, currencies)
   viridis,      # Color palettes for data visualization (colorblind-friendly)
   RColorBrewer, # Additional color palettes for plots
-
-  # Geographic and Spatial Data
+  
+  # String Manipulation
+  stringr,      # Simple and consistent string manipulation functions
+  stringi,      # Advanced string manipulation with Unicode support
+  
+  # Date-Time Handling
+  lubridate,    # Simplify date and time parsing and manipulation
+  
+  # Geographic and Spatial Data; specialized packages for Brazil
   geobr,        # Access Brazilian geographic data (e.g., shapefiles)
+  deflateBr,     # Deflate nominal Brazilian Reais using price indexes
   sf,           # Handle spatial/geographic data in R
-
+  
   # Reporting and Tables
-  gt,           # Tables for reporting results
+  gt,           # Create publication-quality tables
   stargazer,    # Generate regression tables in LaTeX/HTML/text formats
-
+  
   # Machine Learning and Statistics
   caret,        # Comprehensive machine learning framework (classification/regression)
   Metrics,      # Evaluate model performance (e.g., RMSE, MAE)
@@ -96,10 +101,7 @@ pacman::p_load(
   car,          # Companion to Applied Regression (diagnostic functions)
   DescTools,    # Tools for descriptive statistics
   rsample,      # Functions for resampling data
-
-  # Specialized Analysis
-  plm,          # Perform panel data analysis (fixed/random effects models)
-  deflateBR     # Deflate nominal Brazilian Reais using price indexes
+  plm           # Perform panel data analysis (fixed/random effects models)
 )
 
 ```
@@ -108,11 +110,15 @@ pacman::p_load(
 
 # Introduction
 
-This document seems to outline the overall results I have achieved so far as part of my MT research and data work. It will focus on explaining some of the key data used, some descriptive statistics and results or information on the models attempted.
+This document outlines the overall results I have achieved so far as part of my MT research and data work. It will focus on explaining some of the key data used, some descriptive statistics and results or information on the models attempted.
 
-As a recap: my research question explores the projected impacted of changes in the electric vehicle (EV) stock in Brazil in tax revenue. For this to be achieved, the methodology proposed is to use machine learning methods to project the EV stock in the coming years based on data available from the past 10 years. It uses the number of EVs as outcome variable, and a series of different predictors (other types of passenger cars (e.g. gasoline, diesel, ethanol), income distribution, population size, average EV price), with the unit of observation being Brazilian states in a given month, with the time frame ranging from May 2013 to August 2022 due to data availability.
+The research question consists of assessing the fiscal impact (in terms of tax revenue) of a greater adoption of electrical vehicles (EV) in Brazil, focusing exclusively on the shift from passenger cars with combustion engines to plug-in/battery powered EVs. To do that, I intend to use historical data on the country's fleet of passenger vehicles of all kinds and other relevant data (population size per state and city, income distribution on state level, vehicle prices) to understand the current rates of EV adoption in different states, and then use this information to extrapolate the data and run some projections on how the EV stock might grow in a timeframe of 10-15 years. From there, I would use different tax rates and estimate tax revenue scenarios, and discuss different policy recommendations.
 
-Once this is achieved, the next step of the research will be to use a calculation method based on OECD, 2019 to calculate tax revenue scenarios based on taxes related to vehicle activity, vehicle stock, and energy consumption.
+This research draws mostly from methods discussed in these two sources:
+
+-   OECD/ITF (2019), Tax Revenue Implications of Decarbonising Road Transport: Scenarios for Slovenia, OECD Publishing, Paris, <https://doi.org/10.1787/87b39a2f-en/>
+
+-   Boehmke, B., & Greenwell, B.M. (2019). Hands-On Machine Learning with R (1st ed.). Chapman and Hall/CRC. <https://doi.org/10.1201/9780367816377>
 
 ## Descriptive statistics
 
@@ -211,7 +217,7 @@ fleet_df_c <- fleet_df_b_uf %>%
 
 ### EV stock and population size
 
-The table below has a summary of the data frame combining population size ("populacao") on city level with the existing fleet of passenger cars by fuel type. 
+The table below has a summary of the data frame combining population size ("`populacao`") on city level with the existing fleet of passenger cars by fuel type.
 
 ```{r, results = 'asis'}
 
@@ -519,14 +525,146 @@ stargazer(fe_model_1, fe_model_2, fe_model_3, type = "html",
 
 **Interpretation:**
 
-The regression with panel data and fixed-effects has a better performance, with the R² value in all three models being aronud 0.93. It also indicates an increased effect from population and vehicle prices, especially for the price of EVs, when compared to the linear regressions with no fixed effects. The results from table 5 suggest that, on average, a 1% decrease on the average vehicle price for the cheapest EV available on the market on a given month is associated to a 5.4% increase on the EV stock.
+The regression with panel data and fixed-effects has a better performance, with the R² value in all three models being around 0.93. It also indicates an increased effect from population and vehicle prices, especially for the price of EVs, when compared to the linear regressions with no fixed effects. The results from table 5 suggest that, on average, a 1% decrease on the average vehicle price for the cheapest EV available on the market on a given month is associated to a 5.4% increase on the EV stock.
 
 As for the effect of income, the median average income seems to have a now a negative effect, as well as the average income of the top earners in each state. This is an unexpected effect of the correlation between income and EV stock.
 
+<br>
+
+## Regularized Regressions
+
+A further step in the analysis was to regularized the estimate coefficients, to reduce variance and decrease out of sample error. The following code shows applications of the ridge regression to add a tuning parameter (`lambda`) to force correlated coefficients and less important predictors toward zero, thus reducing collinearity. Additionally, a lasso penalty (least absolute shrinkage and selection operator) was also introduced, to push correlated coefficients and irrelevant predictors to zero, using automated feature selection.
+
+The goal of using these methods is to identifying a model where the MSE (Mean Squared Error) is minimized. In this case, the MSE will be used to determine the statistical significance of the factors or predictors under study.
+
+For this section of analysis, additional features were included to the data set, such as mean, median and minimum prices for EVs, hybrid and gasoline vehicles; the fleet size for vehicles of all engine/fuel types; as well as the log-transformed population size (`log_pop`) and size of the vehicle stock with combustion engines (`log_ff`), and the ratio of vehicles with combustion engines per capita (`ff_pc`).
+
+```{r}
+
+# Create training  feature matrices
+# we use model.matrix(...)[, -1] to discard the intercept
+
+library(glmnet)
+
+X <- modglmnetX <- model.matrix(log(electric) ~ ., fleet_df_c)[, -1]
+Y <- log(fleet_df_c$electric)
+
+# Ridge model
+ridge <- glmnet(
+  x = X,
+  y = Y,
+  alpha = 0
+)
+
+# Lasso model
+lasso <- glmnet(
+  x = X,
+  y = Y,
+  alpha = 1
+)
+
+par(mfrow = c(1, 2))
+# plot ridge model
+plot(ridge, xvar = "lambda", main = "Ridge penalty\n\n")
+
+# plot lasso model
+plot(lasso, xvar = "lambda", main = "Lasso penalty\n\n")
 
 
+```
+
+<br>
+
+The plot above shows the coefficients' value being pushed towards zero as the `lambda` value increases. However, differently from the examples in Boehmke & Greenwell (2019), where dashed lines were plotted for the `lambda` values with the smallest MSE and at one standard error of the minimum MSE, this model returns a `NULL` value for these `lambda` values:
+
+```{r, show = T}
+ridge$lambda.min
+ridge$lambda.1se
+lasso$lambda.min
+lasso$lambda.1se
+```
+
+<br>
+
+This might mean the algorithm was unable to determine an optimal regularization parameter for the data set being used, either because the model is not converging to any of the attempted `lambda` values, or because the multicollinearity among the predictors makes it difficult for the algorithm to determine the appropriate `lambda` value. Also, given the good performance of the previous linear regressions, it might mean that the model is overfitted, i.e. it performs well to explain the relationship between independent and dependent variables with the data existing, but it performs poorly with new data.
+
+Following Boehmke & Greenwell (2019), a workaround to this was to use the **caret** package to automate the tuning process (i.e. chosing the parameters to optimize the model and find the lowest regularized MSE). The code output below shows the chosen `lambda` value, which penalizes the existing predictors; and the `alpha` value (which determines whether the **glmnet** package should perform a ridge (`alpha = 0`), lasso (`alpha = 1`) or elastic net (`0 < alpha < 1`) model.
+
+```{r}
+
+# for reproducibility
+set.seed(123)
+
+# grid search across 
+cv_glmnet <- train(
+  x = X,
+  y = Y,
+  method = "glmnet",
+  preProc = c("zv", "center", "scale"),
+  trControl = trainControl(method = "cv", number = 10),
+  tuneLength = 10
+)
+
+cv_glmnet$results %>%
+  filter(alpha == cv_glmnet$bestTune$alpha, lambda == cv_glmnet$bestTune$lambda)
+
+```
+
+<br>
+
+The results show an `alpha` value of 0.3, which means the model uses an elastic net regression, with a heavier ridge penalty. However, the `lambda` value is very low, close to 0, which means the model is applying very little regularization, thus behaving similarly to a standard linear regression, without performing much feature selection.
+
+When using this model to predict the number of EVs using training data, the algorithm returns an RSME of 368.
+
+```{r}
+
+# predict number of electric vehicles on training data
+pred <- predict(cv_glmnet, X)
+
+# compute RMSE of transformed predicted
+RMSE(exp(pred), exp(Y))
+
+```
+
+<br>
+
+While this may be a good enough standard error for most of the states or for the aggregated fleet (on national level), the error makes the predicted values statistically insignificant for three out of the 25 Brazilian states (AC, AP, RR), as seen in the plot below.
+
+```{r}
+fleet_df_c %>% 
+  select(year, sigla_uf, electric) %>% 
+  filter(year == 2022) %>% 
+  group_by(sigla_uf) %>% 
+  summarize(
+    EVs = max(electric)
+  ) %>% 
+  arrange((EVs)) %>% 
+  mutate(sigla_uf = factor(sigla_uf, levels = sigla_uf)) %>% 
+  ggplot(aes(y = sigla_uf, x = EVs)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  geom_text(aes(label = comma(EVs)), hjust = -0.1, size = 3) +
+  scale_x_continuous(labels = comma) +
+  ggtitle("Number of EVs registered per Brazilian State in 2022") +
+  xlab("Number of Observations") +
+  ylab("Brazilian States") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+<br>
+
+Lastly, the plot below shows the 20 variables with the greatest importance, as determined by the magnitude of the standardized coefficients.
+
+```{r}
+
+vip(cv_glmnet, num_features = 20, geom = "point")
 
 
+```
 
+<br>
 
+This shows the most influential features in the model were different from the linear regressions with no regularized estimate coefficients. In this plot, the log transformed fleet size of combustion-engine vehicles (`log_ff`) is the most important predictor, followed by the amount of vehicles with hybrid or ethanol engines (`ethanol`) in the a given state. These two variables might just be proxies for population size.
 
+Additionally, time-related variables (`years` and `months_nr`) also are relevant in the model, followed by the average yearly taxable income of the 50th and 100th percentiles (`avg_taxable_income_50` and `avg_taxable_income_100`, and specific Brazilian states as dummy variables (`sigla_uf`).

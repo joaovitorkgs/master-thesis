@@ -26,15 +26,16 @@ pacman::p_load(
   # Date-Time Handling
   lubridate,    # Simplify date and time parsing and manipulation
   
-  # Geographic and Spatial Data
+  # Geographic and Spatial Data; specialized packages for Brazil
   geobr,        # Access Brazilian geographic data (e.g., shapefiles)
+  deflateBr,     # Deflate nominal Brazilian Reais using price indexes
   sf,           # Handle spatial/geographic data in R
   
   # Reporting and Tables
-  gt,           # Tables for reporting results
+  gt,           # Create publication-quality tables
   stargazer,    # Generate regression tables in LaTeX/HTML/text formats
   
-  # Machine Learning, Statistics, and Metrics
+  # Machine Learning and Statistics
   caret,        # Comprehensive machine learning framework (classification/regression)
   Metrics,      # Evaluate model performance (e.g., RMSE, MAE)
   glmnet,       # Regularized generalized linear models (Lasso, Ridge)
@@ -43,12 +44,8 @@ pacman::p_load(
   pdp,          # Partial Dependence Plots
   car,          # Companion to Applied Regression (diagnostic functions)
   DescTools,    # Tools for descriptive statistics
-  
-  # Specialized Packages
-  plm,          # Perform panel data analysis (fixed/random effects models)
-  deflateBr,     # Deflate nominal Brazilian Reais using price indexes
-  
-  rsample
+  rsample,      # Functions for resampling data
+  plm           # Perform panel data analysis (fixed/random effects models)
 )
 
 

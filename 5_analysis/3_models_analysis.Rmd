@@ -88,9 +88,17 @@ pacman::p_load(
 
 # Introduction
 
-This document outlines the overall results I have achieved so far as part of my MT research and data work. It will focus on explaining some of the key data used, some descriptive statistics and results or information on the models attempted.
+The research question of my MT consists of assessing the fiscal impact (in terms of tax revenue) of a greater adoption of electrical vehicles (EV) in Brazil, focusing exclusively on the shift from passenger cars with interla combustion engines (ICE) to plug-in/battery powered electric vehicles (BEV). For that, I intend to calculate projections based on three estimated variables:
 
-The research question consists of assessing the fiscal impact (in terms of tax revenue) of a greater adoption of electrical vehicles (EV) in Brazil, focusing exclusively on the shift from passenger cars with combustion engines to plug-in/battery powered EVs. To do that, I intend to use historical data on the country's fleet of passenger vehicles of all kinds and other relevant data (population size per state and city, income distribution on state level, vehicle prices) to understand the current rates of EV adoption in different states, and then use this information to extrapolate the data and run some projections on how the EV stock might grow in a timeframe of 10-15 years. From there, I would use different tax rates and estimate tax revenue scenarios, and discuss different policy recommendations.
+1.  **Vehicle Stock:** total registered BEVs in a given moment (input) and revenues from registration and annual vehicle tax (output).
+
+2.  **Energy Use:** vehicle stock and vehicle activity (input) and revenues from taxes on fuel (output).
+
+To obtain the input for the first variable, I intend to use historical data on the country's fleet of passenger vehicles of all kinds and other relevant data (population size per state and city, income distribution on state level, vehicle prices) to estimate the current rates of BEV adoption in different states, and then use this information to extrapolate the data or run projections on how the BEV stock might grow in a time frame of 10-15 years.
+
+To obtain the input for the second variable, I intend to use data on fuel sales and fuel consumption, as well as other information (such as average vehicle activity, measured in kilometers driven per year in different states).
+
+This RMD file outlines the overall results I have achieved so far as part of my MT research and data work, which revolve mostly on calculating the first variable. It also includes some contextual information which will be expanded as part of the final version of the thesis, as well as of the key data used, descriptive statistics, and results from the models attempted as of February 28.
 
 This research draws mostly from methods discussed in these two sources:
 
@@ -104,10 +112,7 @@ This research draws mostly from methods discussed in these two sources:
 
 ## Stock of passenger cars
 
-Brazil has had a significant growth of EVs in the past 10 years. The introduction of more affordable vehicles and a more diverse set of models, as well as changing consumer preferences, has led to a growth from 1600 registered EVs in 2013 to more than 20,600 as of early 2025. While the number of other vehicles has also continued to grow, as indicated in the plot below, this growth of the EV fleet could point to an early stage of a trend where these vehicles can take up a larger share of the country's fleet.
-
-Considering the widespread adoption of cars with combustible fossiles and hybrid cars (gasoline and ethanol), as well as the policies in place to incentivize production and sales of hybrid vehicles, this trend is a remarkable shift in the market of passenger cars in Brazil.
-
+Brazil has had a significant growth of its BEV stock in the past 10 years, with a growth from 1600 registered BEVs in 2013 to more than 20,600 as of early 2025. While the number of other vehicles has also continued to grow, as indicated in the plot below, this growth of the BEV fleet could point to an early stage of a trend where these vehicles can take up a larger share of the country's fleet.
 
 ```{r}
 setwd("C:/Users/joaov/Dropbox/R Assignments/master-thesis/")
@@ -136,12 +141,12 @@ ggplot(yearly_results_agg_long, aes(x = as.integer(year), y = Count, color = Cat
   )
 
 ```
+
 <br>
 
-## Geographic Distribution of EVs
+## Geographic Distribution of BEVs
 
-The adoption of EVs has remained heterogeneous among Brazilian cities and states. Factors such as income, level of urbanisation, population size and density, consumer preferences, and available infrastructure may play a role. The plots below illustrate different distributions of EVs among states (considering total fleet, EV per capita, and share of EVs as part of the total fleet of passenger cars).
-
+The adoption of BEVs has remained heterogeneous among Brazilian cities and states. Factors such as income, level of urbanisation, population size and density, consumer preferences, and available infrastructure may play a role. The plots below illustrate different distributions of the number of BEVs among states, including the total fleet per state, BEV per capita, and share of BEVs as part of the total fleet of passenger cars).
 
 ```{r}
 
@@ -198,7 +203,7 @@ options(scipen = 999)
 ggplot() +
   geom_sf(data=electric_vehicles_per_state, aes(fill=total_electric_vehicles), color=NA, size=.15) +
   labs(
-    title = "EV Stock in Brazil in 2024",
+    title = "BEV Stock in Brazil in 2024",
     subtitle = "Total registered Electrical Vehicles per State",
     fill = "Total Vehicles") +
   geom_sf_text(data=electric_vehicles_per_state, aes(label=abbrev_state), size=2, color="black") +
@@ -218,19 +223,18 @@ ggplot() +
 
 <br>
 
-While useful to show the distribution of EVs in the country, the states with a darker shade of blue above are also the states with the larger population sizes in Brazil. 
-
+While useful to show the distribution of BEVs in the country, the states with a darker shade of blue above are also the states with the larger population sizes in Brazil. While this correlation is somewhat obvious, it is useful to understand where the absolute number of BEVs is most concentrated.
 
 ```{r}
 # Total Vehicles per Capita
 ggplot() +
   geom_sf(data=electric_vehicles_per_state, aes(fill=electric_vehicle_per_capita), color=NA, size=.15) +
   labs(
-    title = "EV stock in Brazil in 2024",
-    subtitle = "Registered EVs per Capita per State",
+    title = "BEV stock in Brazil in 2024",
+    subtitle = "Registered BEVs per Capita per State",
     fill = "Vehicles per Capita") +
   geom_sf_text(data=electric_vehicles_per_state, aes(label=abbrev_state), size=2, color="black") +
-  scale_fill_distiller(palette="Blues", name="Electric Vehicles per Capita", direction = 1) + 
+  scale_fill_distiller(palette="Blues", name="BEV per Capita", direction = 1) + 
   theme_minimal() +
   theme(
     plot.title = element_text(size = 16, face = "bold"),
@@ -246,16 +250,16 @@ ggplot() +
 
 <br>
 
-When looking into EV per capita, no clear trends emerge from the data. The states with a darker shade of blue (showing a bigger share of EVs per capita) may point to states with a greater level of urbanization (as PR and its capital, Curitiba, or the country's capital, Brasilia), or to specific local policies.
+When looking into BEV per capita, States with a darker shade of blue (showing a bigger share of BEV per capita) may point to states with a greater level of urbanization (as PR and its capital, Curitiba, or the country's capital, Brasilia), or to specific local policies.
 
 ```{r}
 
-# Share of EVs as part of the total vehicle fleet
+# Share of BEVs as part of the total vehicle fleet
 ggplot() +
   geom_sf(data=electric_vehicles_per_state, aes(fill=percentage_num), color=NA, size=.15) +
   labs(
-    title = "EV stock in Brazil in 2024",
-    subtitle = "EV fleet percentage of total vehicle fleet by Brazilian State",
+    title = "BEV stock in Brazil in 2024",
+    subtitle = "BEV fleet percentage of total vehicle fleet by Brazilian State",
     fill = "Vehicles per Capita") +
   geom_sf_text(data=electric_vehicles_per_state, aes(label=abbrev_state), size=2, color="black") +
   scale_fill_distiller(palette="BuPu", name="% of Total Fleet", direction = 1) + 
@@ -274,16 +278,15 @@ ggplot() +
 
 <br>
 
-Finally, exploring the data on the share of vehicles in each state which are electrical, a similar pattern emerges when comparing plots 3 and 4. 
+Finally, exploring the data on the share of BEVs from the total passenger car fleet in each state, a similar pattern emerges when comparing plots 3 and 4.
 
 <br>
 
 ## Tax revenue
 
-Based on this data and on the persepctive of growing EV fleets, especially in the more populated, dense, and urbanized regions of the country, the future adoption of EVs in the place of passenger cars with combustion engines might represent a change in the tax revenue which currently is levied from fuel sales, vehicle stock and activity from conventional gasoline or hybrid vehicles.
+Based on this data and the expectation that the BEV stock continues to growh, especially in the more populated, dense, and urbanized regions of the country, the future adoption of BEV in the place of ICE might represent a change in the tax revenue which currently is levied from fuel sales, vehicle stock and activity from conventional gasoline or hybrid vehicles.
 
-To illustrate this, the plot below shows the trend of how the aggregate tax revenue from the past ten years related to fuel sales has changed and what trends there might be. Thus far, the only relevant external shock has been that of the COVID-19 pandemic, but the data on (nominal) tax revenue seems to be growing steadily.
-
+To illustrate this, the plot below shows the trend of how the aggregate tax revenue from the past ten years related to fuel sales has changed and what trends there might be. In the timeframe examined, the only relevant external shock has been that of the COVID-19 pandemic, but the data on (nominal) tax revenue seems to be growing steadily.
 
 ```{r}
 setwd("C:/Users/joaov/Dropbox/R Assignments/master-thesis/")
@@ -310,9 +313,7 @@ ggplot(federal_gasstation_fueltaxes, aes(x = ano_mes_date,  y = fuel_taxes/10000
 
 <br>
 
-With climate change as a backdrop, combined with technology changes, the effects of the 2024 tax reform, and potential shifts on consumer preferences, this trend on fuel sales and usage of fossil fuels may change in the future. The goal of this research is to quantify this potential change and shift on tax revenue trends, based on projections of potential growth of the EV fleet, and its impact on tax revenue given the current tax policies and rates in place, with policy recommendations to maintal fiscal balance while still incentivising climate mitigation policies in the Brazilian transport sector.
-
-The sections below describe the data used to better understand the underlying factors driving this trend on the adoption of EVs, as well potential predictors of future trends and changes in the EV stock, which will also be used to extrapolate currently yearly data and calculate potential tax revenue changes in the coming 10-15 years.
+With climate change as a backdrop and other factors that influence the Brazilian market for ICEs and BEVs — such as technology changes and the industry's convergence to BEVs (Dumas and Dugoua, 2024), the effects of the 2024 tax reform, and potential shifts on consumer preferences — this trend on fuel sales and usage of fossil fuels may behave differently in the future.
 
 ------------------------------------------------------------------------
 
@@ -407,7 +408,7 @@ fleet_df_c <- fleet_df_b_uf %>%
 
 ## Descriptive statistics
 
-### EV stock and population size
+### BEV stock and population size
 
 The table below has a summary of the data frame combining population size ("`populacao`") on city level with the existing fleet of passenger cars by fuel type.
 
@@ -426,7 +427,7 @@ stargazer(as.data.frame(fleet_2013_2024_clean),
 
 <br>
 
-Exploring the data visually, I find that population has a clear positive correlation with the EV fleet size, though this may be somewhat obvious. I am not yet entirely sure if I should move forward with this variable as a predictor.
+Exploring the data visually, I find that population has a clear positive correlation with the BEV fleet size, though this may be somewhat obvious. I am not yet entirely sure if I should move forward with this variable as a predictor.
 
 ```{r}
 ggplot(data = fleet_df_c, aes(x=population, y=electric)) +
@@ -454,7 +455,7 @@ ggplot(data = fleet_df_c, aes(x=population, y=electric)) +
 
 I have obtained a table with monthly prices of all vehicles being commercialized (new or used) in Brazil in a given month and year, from 2013 to 2022. The primary data is produced by FIPE, a research foundation that maintains a database on car prices to use as a parameter for individual transactions and valuation of any given car. I obtained this data from a secondary source (Peixoto, 2022), which scraped data from FIPE's website and made it publicly available.
 
-By grouping data based on each model fuel or traction type (e.g. electric, gasoline, ethanol or hybrid), I have obtained mean, median, minimum and maximal prices, as well as the number of movels available in a given month and year.
+By grouping data based on each model's fuel source (e.g. battery, gasoline, ethanol or hybrid), I have obtained mean, median, minimum and maximal prices, as well as the number of models available in a given month and year.
 
 ```{r, results = 'asis'}
 
@@ -468,9 +469,9 @@ stargazer(as.data.frame(price_df),
 
 <br>
 
-When plotting the data, EV prices and EV stock seem to have some degree of correlation, suggesting that more EVs are bought as more affordable vehicles are available in the Brazilian market. However, the data points are oddly spread in the plot, as I do not have an explanation for these two clusters.
+When plotting the data, BEV prices and BEV stock seem to have some degree of correlation, suggesting that more BEVs are bought as more affordable vehicles are available in the Brazilian market. However, the data points are oddly spread in the plot, as I do not have an explanation for these two clusters.
 
-I used data on the cheapest EV model ("min_price_electric") available in the Brazilian market in a given month, and the EV stock size in the corresponding month.
+I used data on the cheapest BEV model ("min_price_electric") available in the Brazilian market in a given month, and the BEV stock size in the corresponding month.
 
 ```{r}
 fleet_df_c %>% 
@@ -483,11 +484,11 @@ fleet_df_c %>%
   geom_point() +
   geom_smooth(method = "lm", se = FALSE, color = "red") + # Add linear regression line
   labs(
-    title = "EV Adoption vs. EV minimum price in Brazil (2018-2022)",
+    title = "BEV Adoption vs. BEV minimum price in Brazil (2018-2022)",
   ) +
   theme_bw() +
-  ylab("Number of Registered Electric Vehicles (log)") +
-  xlab("EV average price (thousand BRL)") +
+  ylab("Number of Registered BEV (log)") +
+  xlab("BEV average price (thousand BRL)") +
   scale_x_continuous(labels = scales::comma) + # Log scale for x-axis with meaningful labels
   scale_y_continuous(trans = "log10", labels = scales::comma) +
   theme(
@@ -513,7 +514,7 @@ stargazer(as.data.frame(income_data_wide_uf),
 
 ```
 
-When visualizing the data, the scatterplot below suggests that average taxable income of the richest percentile also seems to have a correlation with number of EVs in a given month. This suggests that acquiring an EV seems to be inaccessible for most of the population.
+When visualizing the data, the scatterplot below suggests that average taxable income of the richest percentile also seems to have a correlation with number of registered BEVs in a given month. This suggests that acquiring an BEV seems to be inaccessible for most of the population.
 
 ```{r}
 fleet_df_c %>% 
@@ -524,9 +525,9 @@ fleet_df_c %>%
   ggplot(aes(x=avg_taxable_income_100, y=electric)) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE, color = "red") + # Add linear regression line
-  ggtitle("EV Adoption vs. Average income of top 100th Percentile in Brazilian States")+
+  ggtitle("BEV Adoption vs. Average income of top 100th Percentile in Brazilian States")+
   theme_bw() +
-  ylab("Number of Registered Electric Vehicles (log)") +
+  ylab("Number of Registered BEVs (log)") +
   xlab("Average Taxable Income of the 100th Percentile (log)") +
   scale_x_continuous(trans = "log10", labels = scales::comma) + # Log scale for x-axis with meaningful labels
   scale_y_continuous(trans = "log10", labels = scales::comma) +  # Log scale for y-axis with meaningful labels
@@ -553,9 +554,9 @@ fleet_df_c %>%
   ggplot(aes(x=avg_taxable_income_50, y=electric)) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE, color = "red") + # Add linear regression line
-  ggtitle("EV Adoption vs. Average income of the top 50th Percentile in Brazilian State")+
+  ggtitle("BEV Adoption vs. Average income of the top 50th Percentile in Brazilian State")+
   theme_bw() +
-  ylab("Number of Registered Electric Vehicles (log)") +
+  ylab("Number of Registered BEVs (log)") +
   xlab("Average Taxable Income of the 50th Percentile (log)") +
   scale_x_continuous(trans = "log10", labels = scales::comma) + # Log scale for x-axis with meaningful labels
   scale_y_continuous(trans = "log10", labels = scales::comma) +  # Log scale for y-axis with meaningful labels
@@ -585,9 +586,9 @@ fleet_df_c %>%
   ggplot(aes(x=avg_taxable_income_10, y=electric)) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE, color = "red") + # Add linear regression line
-  ggtitle("EV Adoption vs. Average income of the bottom 10th Percentile in Brazilian State")+
+  ggtitle("BEV Adoption vs. Average income of the bottom 10th Percentile in Brazilian State")+
   theme_bw() +
-  ylab("Number of Registered Electric Vehicles (log)") +
+  ylab("Number of Registered BEVs (log)") +
   xlab("Average Taxable Income of the 50th Percentile (log)") +
   scale_x_continuous(labels = scales::comma) + # Log scale for x-axis with meaningful labels
   scale_y_continuous(trans = "log10", labels = scales::comma) +  # Log scale for y-axis with meaningful labels
@@ -608,25 +609,25 @@ fleet_df_c %>%
 
 # Models
 
-In order to project the EV stock in Brazil in relation to future years by using past data, I have attempted to establish models that can correctly predict the information already at hand. The goal is to find good predictors to explain the growth in the EV stock, which are statistically significant, and that have a logical mechanism that explains the relationship. Based on the coefficients found and the accuracy of the model, I will then create synthetic data which extrapolates the current EV stock to the future years, which will then be used to examine the impact of electrifying the passenger vehicle fleet in Brazil on tax revenue.
+In order to project the BEV stock in Brazil in relation to future years by using past data, I have attempted to establish models that can correctly predict the information already at hand. The goal is to find good predictors to explain the growth in the BEV stock, which are statistically significant, and that have a logical mechanism that explains the relationship. Based on the coefficients found and the accuracy of the model, I will then create synthetic data which extrapolates the current BEV stock to the future years, which will then be used to examine the impact of electrifying the passenger vehicle fleet in Brazil on tax revenue.
 
 The predictors chosen thus far and their rationale were the following:
 
--   **Population size**: bigger cities and states are expected to have a more developed infrastructure, which would include charging infrastructure, as well as a bigger demand and offer for EVs.
+-   **Population size**: bigger cities and states are expected to have a more developed infrastructure, which would include charging infrastructure, as well as a bigger demand and offer for BEV.
 
--   **Fossil fuel Vehicles** : instead of owning multiple cars, I would expect a gradual substitution of vehicles running on fossil fuels (chiefly gasoline) by EVs as the stock of the latter increases.
+-   **Fossil fuel Vehicles** : instead of owning multiple cars, I would expect a gradual substitution of ICEs by BEVs as the stock of the latter increases.
 
 -   **Time**: due to recent trends, evolving consumer preferences, markets and available technologies, as well as a growing concern with climate change in recent years and the negative impacts of CO2 emitting cars, time (number of months passed) was included as a predictor.
 
--   **Vehicle prices**: the first EV models available in 2013 were twice as expensive as the cheapest models currently available. As the EV become more affordable, the overall EV stock is expected to increase.
+-   **Vehicle prices**: the first BEV models available in 2013 were twice as expensive as the cheapest models currently available. As BEVs become more affordable, the overall BEV stock is expected to increase.
 
--   **Income**: in spite of recent EV models becoming gradually less expensive, the cost of the cheapest models still is significantly higher than that of gasoline or hybrid vehicles. This would mean that cities and states with a higher average income of the top percentiles of the population would have a bigger EV stock as well.
+-   **Income**: in spite of recent BEVs models becoming gradually less expensive, the cost of the cheapest models still is significantly higher than that of ICEs. This would mean that cities and states with a higher average income of the top percentiles of the population would have a bigger BEV stock as well.
 
-These predictors might also have some degree of multicollinearity. For example, larger cities and states tend to also be richer. Population growth and price changes are also correlated with the predictor related to time. This means that the predictors might introduce bias or have a limited capacity of explaining the increase in EVs in the models.
+These predictors might also have some degree of multicollinearity. For example, larger cities and states tend to also be richer. Population growth and price changes are also correlated with the predictor related to time. This means that the predictors might introduce bias or have a limited capacity of explaining the increase in BEV in the models.
 
 ## Linear regressions
 
-The first and most simple models were simple linear regressions (OLS), where the EV stock (the log-transformed number of registered EVs in a given month in all Brazilian states) was regressed on population size and time. Another model includes the interaction between time and population, as well as with the number of other kinds of vehicles in the fleet.
+The first and most simple models were simple linear regressions (OLS), where the BEV stock (the log-transformed number of registered BEVs in a given month in all Brazilian states) was regressed on population size and time. Another model includes the interaction between time and population, as well as with the number of other kinds of vehicles in the fleet.
 
 ```{r, results = 'asis'}
 
@@ -643,7 +644,7 @@ model3 <- lm(log(electric) ~ log(population) * months_nr + log(min_ev) + log(mea
 
 stargazer(model1, model2, model3, type = "html",
           title=
-            "Table 4: EV stock regressed on population size, time, price & income (linear regression)",
+            "Table 4: BEV stock regressed on population size, time, price & income (linear regression)",
           single.row= FALSE,
           column.labels =c("Model 1","Model 2", "Model 3", "Model 4"),
           covariate.labels=c("Population (log)",
@@ -665,9 +666,9 @@ stargazer(model1, model2, model3, type = "html",
 
 **Interpretation:**
 
-The above regression tables shows state-level data where the EV stock is regressed on log-transformed population, months, average car prices per vehicle type and an interactions between population and time-related variable.
+The above regression tables shows state-level data where the BEV stock is regressed on log-transformed population, months, average car prices per vehicle type and an interactions between population and time-related variable.
 
-The regression with the most variables seems to perform well, based on the statistical significance of the coefficients, as well as the R² and F-Statistic values. It corroborates some of the initial assumptions and expected relationships for most of the independent variables, including increases on population size, time effects, and the influence of prices of vehicles, which also have the correct direction (e.g. EV prices have a negative coefficient).
+The regression with the most variables seems to perform well, based on the statistical significance of the coefficients, as well as the R² and F-Statistic values. It corroborates some of the initial assumptions and expected relationships for most of the independent variables, including increases on population size, time effects, and the influence of prices of vehicles, which also have the correct direction (e.g. BEV prices have a negative coefficient).
 
 As for the effect of income — measured here as the annual average taxable income of the 50th and 100th top percentiles — in each state, the median average income seems to have a positive correlation, but the average income of the top earners in Brazilian states has no statistically significant effect, with an unexpected negative correlation.
 
@@ -694,7 +695,7 @@ fe_model_3 <- plm(log(electric) ~ log(population) + log(min_ev) + log(mean_gas) 
 
 
 stargazer(fe_model_1, fe_model_2, fe_model_3, type = "html",
-          title = "Table 5: EV stock regressed on population size, time, vehicle prices and income with panel data and fixed effects",
+          title = "Table 5: BEV stock regressed on population size, time, vehicle prices and income with panel data and fixed effects",
           single.row = FALSE,
           dep.var.labels = c("EV stock (log)"),
           covariate.labels=c("Population (log)",
@@ -715,9 +716,9 @@ stargazer(fe_model_1, fe_model_2, fe_model_3, type = "html",
 
 **Interpretation:**
 
-The regression with panel data and fixed-effects has a better performance, with the R² value in all three models being around 0.93. It also indicates an increased effect from population and vehicle prices, especially for the price of EVs, when compared to the linear regressions with no fixed effects. The results from table 5 suggest that, on average, a 1% decrease on the average vehicle price for the cheapest EV available on the market on a given month is associated to a 5.4% increase on the EV stock.
+The regression with panel data and fixed-effects has a better performance, with the R² value in all three models being around 0.93. It also indicates an increased effect from population and vehicle prices, especially for the price of BEVs, when compared to the linear regressions with no fixed effects. The results from table 5 suggest that, on average, a 1% decrease on the average vehicle price for the cheapest BEV available on the market on a given month is associated to a 5.4% increase on the BEV stock.
 
-As for the effect of income, the median average income seems to have a now a negative effect, as well as the average income of the top earners in each state. This is an unexpected effect of the correlation between income and EV stock.
+As for the effect of income, the median average income seems to have a now a negative effect, as well as the average income of the top earners in each state. This is an unexpected effect of the correlation between income and BEV stock.
 
 <br>
 
@@ -725,10 +726,9 @@ As for the effect of income, the median average income seems to have a now a neg
 
 A further step in the analysis was to regularized the estimate coefficients, to reduce variance and decrease out of sample error. The following code shows applications of the ridge regression, in which a tuning parameter (`lambda`) has been added to force correlated coefficients and less important predictors toward zero, thus reducing collinearity. Additionally, a Lasso (least absolute shrinkage and selection operator) penalty was also introduced, to push correlated coefficients and irrelevant predictors to zero, using automated feature selection.
 
-For this section of analysis, additional features were included to the data set, such as mean, median and minimum prices for EVs, hybrid and gasoline vehicles; the fleet size for vehicles of all engine/fuel types; as well as the log-transformed population size (`log_pop`) and size of the vehicle stock with combustion engines (`log_ff`), and the ratio of vehicles with combustion engines per capita (`ff_pc`).
+For this section of analysis, additional features were included to the data set, such as mean, median and minimum prices for BEVs, hybrid and gasoline vehicles; the fleet size for vehicles of all engine/fuel types; as well as the log-transformed population size (`log_pop`) and size of the vehicle stock with combustion engines (`log_ff`), and the ratio of vehicles with combustion engines per capita (`ff_pc`).
 
 The goal of using these methods is to identifying a model where the MSE (Mean Squared Error) is minimized. In this case, the MSE will be used to determine the statistical significance of the factors or predictors under study.
-
 
 ```{r}
 
@@ -805,7 +805,7 @@ cv_glmnet$results %>%
 
 The results show an `alpha` value of 0.3, which means the model uses an elastic net regression, with a heavier ridge penalty. However, the `lambda` value is very low, close to 0, which means the model is applying very little regularization, thus behaving similarly to a standard linear regression, without performing much feature selection.
 
-When using this model to predict the number of EVs using training data, the algorithm returns an RSME of 368.
+When using this model to predict the number of BEVs using training data, the algorithm returns an RSME of 368.
 
 ```{r}
 
@@ -827,15 +827,15 @@ fleet_df_c %>%
   filter(year == 2022) %>% 
   group_by(sigla_uf) %>% 
   summarize(
-    EVs = max(electric)
+    BEVs  = max(electric)
   ) %>% 
-  arrange((EVs)) %>% 
+  arrange((BEVs)) %>% 
   mutate(sigla_uf = factor(sigla_uf, levels = sigla_uf)) %>% 
-  ggplot(aes(y = sigla_uf, x = EVs)) +
+  ggplot(aes(y = sigla_uf, x = BEVs)) +
   geom_bar(stat = "identity", fill = "steelblue") +
-  geom_text(aes(label = comma(EVs)), hjust = -0.1, size = 3) +
+  geom_text(aes(label = comma(BEVs)), hjust = -0.1, size = 3) +
   scale_x_continuous(labels = comma) +
-  ggtitle("Number of EVs registered per Brazilian State in 2022") +
+  ggtitle("Number of BEVs registered per Brazilian State in 2022") +
   xlab("Number of Observations") +
   ylab("Brazilian States") +
   theme_bw() +
@@ -860,15 +860,15 @@ This shows the most influential features in the model were different from the li
 
 Additionally, time-related variables (`years` and `months_nr`) also are relevant in the model, followed by the average yearly taxable income of the 50th and 100th percentiles (`avg_taxable_income_50` and `avg_taxable_income_100`, and specific Brazilian states as dummy variables (`sigla_uf`).
 
-
 <br>
 
 ## Multivariate Adaptive Regression Splines
 
-This model attempts to run algorithms with nonlinear model terms, with interaction effects, squared terms and other transformations, such as step functions. Multivariate Adaptive Regression Splines (MARS) will be employed to explore nonlinear model terms with automatic functions, by using the **earth** package.
+Multivariate Adaptive Regression Splines (MARS) will be employed to explore nonlinear model terms with automatic functions, by using the **earth** package. The goal will be to run algorithms with nonlinear model terms, with interaction effects, squared terms and other transformations, such as step functions.
 
 ### Models without interaction
 
+Using the same data, these are the most important coefficients identified by the algorithm, as well as the number of terms selected and interactions.
 
 ```{r}
 
@@ -887,7 +887,7 @@ summary(mars1)
 
 <br>
 
-The summary of the MARS model indicates a high value for its R², which is a good performance for the model, and 15 of the predictors have been kept. The list of coefficients also show the knots for the step functions.
+The summary of the MARS model indicates a high value for its R², which is a good performance for the model. Also, the 15 of the predictors have been kept, with 30 terms selected for the best performing model.
 
 ```{r}
 
@@ -902,10 +902,9 @@ The summary of the MARS model indicates a high value for its R², which is a goo
 
 ### Models with interaction
 
+A second attempt at the MARS algorithm includes interactions. The variables describing the model performance have been included below, as well as a plot showing the relevance of different variables:
 
-Hyperparameters minimize prediction error by choosing how many terms in the final model and the complexity of the interactions. Grid search provides a set of different combinations of these two combinations. This is intended to prevent overfitting (the model does well for training data, but not well for testing or validating data) and underfitting (where the model is too simple to capture relevant patterns.)
-
-```{r}
+```{r include=FALSE}
 mars2 <- earth(
   log(electric) ~ .,
   data = fleet_df_d,
@@ -921,6 +920,10 @@ hyper_grid <- expand.grid(
   nprune = seq(2, 100, length.out = 10) %>% floor()
 )
 
+```
+
+```{r include=FALSE}
+
 # Training the algorithm 
 set.seed(123)  # for reproducibility
 cv_mars <- train(
@@ -934,12 +937,21 @@ cv_mars <- train(
 
 # Finding the best hyperparameters
 cv_mars$bestTune
-cv_mars$results %>%
-  filter(nprune == cv_mars$bestTune$nprune, degree == cv_mars$bestTune$degree)
 
 # Plotting the RMSE according to the number of terms
 ggplot(cv_mars)
 
+```
+
+
+
+```{r}
+cv_mars$results %>%
+  filter(nprune == cv_mars$bestTune$nprune, degree == cv_mars$bestTune$degree)
+
+```
+
+```{r}
 
 # Mapping out the most relevant predictors
 p1 <- vip(cv_mars, num_features = 25, geom = "point", value = "gcv") + ggtitle("GCV")
@@ -948,8 +960,11 @@ p2 <- vip(cv_mars, num_features = 25, geom = "point", value = "rss") + ggtitle("
 # Population and log_pop are coming up as the most important predictors
 # Maybe I should use a different predictor instead?
 
-
 gridExtra::grid.arrange(p1, p2, ncol = 2)
+
+```
+
+```{r include=FALSE}
 
 # Check for interactions
 cv_mars$finalModel %>%
@@ -980,3 +995,19 @@ gridExtra::grid.arrange(p1, p2, p3, ncol = 3)
 
 
 ```
+
+<br>
+
+------------------------------------------------------------------------
+
+# Next Steps
+
+Based on the coefficients, statistical significance and R² values, the linear models obtained (with and without fixed effects) have shown a good performance. The corresponding tables suggest that grown in the BEV stock can be explained by population size, income levels, BEV prices. Additionally, Regularized Regressions and Multivariate Adaptive Regressions have been attempted, but the algorithms generated have not performed feature selection in a relevant way.
+
+The next step now will be to calculate expected values of BEV stock for the coming years. For that, I will attempt two approaches:
+
+1.  Generate synthetic data by using the coefficients obtained to calculate projected values for the EV stock in the coming years;
+
+2.  Further explore different models (e.g. MARS, decision trees) and methods (e.g. ARIMA) to calculate projected values for the EV stock.
+
+Afterwards, I will move to the second variable of the model, based on the OECD paper (2019); and will calculate the expected tax revenue impact of the further adoption of BEVs in the Brazilian market.

@@ -1,5 +1,5 @@
 ---
-title: "MT: Colloquium Preparation"
+title: "MT Colloquium Preparation"
 author: "Joao Vitor Krieger | joaovitorkgs"
 date: "`r format(Sys.time(), '%B %d, %Y | %H:%M:%S | %Z')`"
 output:
@@ -88,17 +88,19 @@ pacman::p_load(
 
 # Introduction
 
-The research question of my MT consists of assessing the fiscal impact (in terms of tax revenue) of a greater adoption of electrical vehicles (EV) in Brazil, focusing exclusively on the shift from passenger cars with interla combustion engines (ICE) to plug-in/battery powered electric vehicles (BEV). For that, I intend to calculate projections based on three estimated variables:
+The goal of my research consists of assessing the fiscal impact (in terms of tax revenue) of a greater adoption of electrical vehicles (EV) in Brazil, focusing exclusively on the shift from passenger cars with internal combustion engines (ICE) to plug-in/battery powered electric vehicles (BEV).
 
-1.  **Vehicle Stock:** total registered BEVs in a given moment (input) and revenues from registration and annual vehicle tax (output).
+For that, I intend to calculate tax revenue scenarios based on two variables:
 
-2.  **Energy Use:** vehicle stock and vehicle activity (input) and revenues from taxes on fuel (output).
+1.  **Vehicle Stock:** total registered BEVs in a given moment. This variable will be used as input to calculate revenues from registration and annual vehicle tax.
 
-To obtain the input for the first variable, I intend to use historical data on the country's fleet of passenger vehicles of all kinds and other relevant data (population size per state and city, income distribution on state level, vehicle prices) to estimate the current rates of BEV adoption in different states, and then use this information to extrapolate the data or run projections on how the BEV stock might grow in a time frame of 10-15 years.
+2.  **Energy Use:** vehicle stock and vehicle activity. This variable will be used as input to calculate revenue (or the loss thereof) from taxes on fuel.
 
-To obtain the input for the second variable, I intend to use data on fuel sales and fuel consumption, as well as other information (such as average vehicle activity, measured in kilometers driven per year in different states).
+To calculate the first variable, I intend to use historical data on the country's fleet of passenger vehicles of all kinds and other relevant data (population size per state and city, income distribution on state level, vehicle prices) to estimate the current rates of BEV adoption in different states, and then use this information to extrapolate the data or run projections on how the BEV stock might grow in a time frame of 10-15 years.
 
-This RMD file outlines the overall results I have achieved so far as part of my MT research and data work, which revolve mostly on calculating the first variable. It also includes some contextual information which will be expanded as part of the final version of the thesis, as well as of the key data used, descriptive statistics, and results from the models attempted as of February 28.
+To calculate second variable, I intend to use data on fuel sales and fuel consumption, as well as other information (such as average vehicle activity, measured in kilometers driven per year in different states). This variable will also be calculated with the first variable as input.
+
+**This RMD file outlines the overall results I have achieved so far as part of my MT research and data work, which revolve mostly on calculating the first variable**. It also includes some contextual information which will be expanded as part of the final version of the thesis, as well as of the key data used, descriptive statistics, and results from the models attempted as of February 28.
 
 This research draws mostly from methods discussed in these two sources:
 
@@ -134,7 +136,7 @@ ggplot(yearly_results_agg_long, aes(x = as.integer(year), y = Count, color = Cat
   ) +
   labs(
     x = "Year",
-    y = "Number of Registered Vehicles",
+    y = "Number of Registered Vehicles (log)",
     title = "Evolution of Registered Vehicles in Brazil per Combustible Type",
     subtitle = "Source: National Traffic Secretariat, 2024",
     color = "Category"
@@ -223,7 +225,7 @@ ggplot() +
 
 <br>
 
-While useful to show the distribution of BEVs in the country, the states with a darker shade of blue above are also the states with the larger population sizes in Brazil. While this correlation is somewhat obvious, it is useful to understand where the absolute number of BEVs is most concentrated.
+While useful to show the distribution of BEVs in the country, the states with a darker shade of blue above are also the states with the larger population sizes in Brazil. While this correlation is somewhat obvious, it is useful to understand where most of the registered BEVs are concentrated.
 
 ```{r}
 # Total Vehicles per Capita
@@ -250,7 +252,7 @@ ggplot() +
 
 <br>
 
-When looking into BEV per capita, States with a darker shade of blue (showing a bigger share of BEV per capita) may point to states with a greater level of urbanization (as PR and its capital, Curitiba, or the country's capital, Brasilia), or to specific local policies.
+When looking into BEV per capita, States with a darker shade of purple (showing a bigger share of BEV per capita) may point to states with a greater level of urbanization (as PR and its capital, Curitiba, or the country's capital, Brasilia), or to specific local policies.
 
 ```{r}
 
@@ -427,7 +429,7 @@ stargazer(as.data.frame(fleet_2013_2024_clean),
 
 <br>
 
-Exploring the data visually, I find that population has a clear positive correlation with the BEV fleet size, though this may be somewhat obvious. I am not yet entirely sure if I should move forward with this variable as a predictor.
+Exploring the data visually, I find that population has a clear positive correlation with the BEV fleet size, though this may be somewhat obvious.
 
 ```{r}
 ggplot(data = fleet_df_c, aes(x=population, y=electric)) +
@@ -469,14 +471,14 @@ stargazer(as.data.frame(price_df),
 
 <br>
 
-When plotting the data, BEV prices and BEV stock seem to have some degree of correlation, suggesting that more BEVs are bought as more affordable vehicles are available in the Brazilian market. However, the data points are oddly spread in the plot, as I do not have an explanation for these two clusters.
+When plotting the data, BEV prices and BEV stock seem to have some degree of correlation, suggesting that more BEVs are bought as more affordable vehicles are available in the Brazilian market. However, the data points are oddly spread in the plot, as I do not have an explanation for these two clusters that appear in the plot bellow.
 
-I used data on the cheapest BEV model ("min_price_electric") available in the Brazilian market in a given month, and the BEV stock size in the corresponding month.
+Note: each data point in the plot represents the price of the cheapest BEV model ("`min_price_electric`") available in the Brazilian market in a given month, and the BEV stock size in the corresponding month.
 
 ```{r}
 fleet_df_c %>% 
-  filter(year > 2017) %>% 
-  group_by(date) %>% 
+  filter(year > 2015) %>% 
+  group_by(date, year) %>% 
   summarize(
     ev_price = mean(min_ev)/1000,
     electric = mean(electric)) %>% 
@@ -496,9 +498,78 @@ fleet_df_c %>%
     axis.title = element_text(size = 10),
     axis.text = element_text(size = 8),
     axis.text.x = element_text(angle = 0, hjust = 1)
+  ) 
+
+```
+
+
+<br>
+
+Exploring the yearly average prices for the most affordable models in the Brazilian market shows a trend in which prices are becoming cheaper as time passes. 
+
+```{r}
+
+fleet_df_c %>% 
+  filter(year > 2016) %>% 
+  group_by(year) %>% 
+  summarize(
+    ev_price = mean(min_ev)/1000) %>% 
+  ggplot(aes(x = year, y = ev_price)) +
+  geom_line() +
+  geom_point(size = 3) +
+  labs(
+    title = "BEV Average Price Evolution in Brazil (2016-2022)",
+    x = "Year",
+    y = "BEV Average Price (thousand BRL)"
+  ) +
+  theme_bw() +
+  scale_x_continuous(breaks = seq(2016, 2022, 1)) +
+  scale_y_continuous(labels = scales::comma) +
+  theme(
+    plot.title = element_text(size = 12),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 8),
+    axis.text.x = element_text(angle = 0, hjust = 0.5)
   )
 
 ```
+
+<br>
+
+When showing monthly data, the trend of price values behaves in an unexpected way between 2018 and 2019, which might demand some more careful revision of the available data at hand before plugging it into the models.
+
+
+```{r}
+
+fleet_df_c %>% 
+  filter(year > 2016) %>% 
+  mutate(month = floor_date(date, "month")) %>%
+  group_by(month) %>% 
+  summarize(
+    ev_price = mean(min_ev)/1000,
+    electric = mean(electric)) %>% 
+  ggplot(aes(x = month, y = ev_price)) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "BEV Minimum Price Evolution in Brazil (2016-2022)",
+    x = "Date",
+    y = "Average Price (thousand BRL)"
+  ) +
+  theme_bw() +
+  scale_x_date(date_breaks = "6 months", date_labels = "%b %Y") +
+  scale_y_continuous(labels = scales::comma) +
+  theme(
+    plot.title = element_text(size = 12),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 8),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+
+```
+
+
 
 ### Income Information
 
@@ -724,7 +795,7 @@ As for the effect of income, the median average income seems to have a now a neg
 
 ## Regularized Regressions
 
-A further step in the analysis was to regularized the estimate coefficients, to reduce variance and decrease out of sample error. The following code shows applications of the ridge regression, in which a tuning parameter (`lambda`) has been added to force correlated coefficients and less important predictors toward zero, thus reducing collinearity. Additionally, a Lasso (least absolute shrinkage and selection operator) penalty was also introduced, to push correlated coefficients and irrelevant predictors to zero, using automated feature selection.
+A further step in the analysis was to regularize the estimate coefficients, to reduce variance and decrease out of sample error. The following code shows applications of the ridge regression, in which a tuning parameter (`lambda`) has been added to force correlated coefficients and less important predictors toward zero, thus reducing collinearity. Additionally, a Lasso (least absolute shrinkage and selection operator) penalty was also introduced, to push correlated coefficients and irrelevant predictors to zero, using automated feature selection.
 
 For this section of analysis, additional features were included to the data set, such as mean, median and minimum prices for BEVs, hybrid and gasoline vehicles; the fleet size for vehicles of all engine/fuel types; as well as the log-transformed population size (`log_pop`) and size of the vehicle stock with combustion engines (`log_ff`), and the ratio of vehicles with combustion engines per capita (`ff_pc`).
 
@@ -887,7 +958,7 @@ summary(mars1)
 
 <br>
 
-The summary of the MARS model indicates a high value for its R², which is a good performance for the model. Also, the 15 of the predictors have been kept, with 30 terms selected for the best performing model.
+The summary of the MARS model indicates a high value for its R², which is a good performance for the model. Also, the 15 of the predictors have been kept, with 30 terms selected for the best performing model. The plot below shows the performance of the algorithm being used and the selected model based on number of terms and RSq and GRSq values.
 
 ```{r}
 
@@ -897,12 +968,6 @@ plot(mars1, which = 1)
 ```
 
 <br>
-
-The summary of the MARS model indicates a high value for its R², which is a good performance for the model, and 15 of the predictors have been kept. The list of coefficients also show the knots for the step functions.
-
-### Models with interaction
-
-A second attempt at the MARS algorithm includes interactions. The variables describing the model performance have been included below, as well as a plot showing the relevance of different variables:
 
 ```{r include=FALSE}
 mars2 <- earth(
@@ -943,15 +1008,13 @@ ggplot(cv_mars)
 
 ```
 
-
-
-```{r}
+```{r include = FALSE}
 cv_mars$results %>%
   filter(nprune == cv_mars$bestTune$nprune, degree == cv_mars$bestTune$degree)
 
 ```
 
-```{r}
+```{r include = FALSE}
 
 # Mapping out the most relevant predictors
 p1 <- vip(cv_mars, num_features = 25, geom = "point", value = "gcv") + ggtitle("GCV")
@@ -1002,9 +1065,9 @@ gridExtra::grid.arrange(p1, p2, p3, ncol = 3)
 
 # Next Steps
 
-Based on the coefficients, statistical significance and R² values, the linear models obtained (with and without fixed effects) have shown a good performance. The corresponding tables suggest that grown in the BEV stock can be explained by population size, income levels, BEV prices. Additionally, Regularized Regressions and Multivariate Adaptive Regressions have been attempted, but the algorithms generated have not performed feature selection in a relevant way.
+Based on the coefficients, statistical significance and R² values, the linear models obtained (with and without fixed effects) have shown a good performance. The corresponding tables suggest that the growth in BEV stock can be explained by population size, income levels, BEV prices. Additionally, Regularized Regressions and Multivariate Adaptive Regressions have been attempted, but the algorithms generated have not performed feature selection in a relevant way.
 
-The next step now will be to calculate expected values of BEV stock for the coming years. For that, I will attempt two approaches:
+The next step now will be to to calculate and plot expected values of BEV stock for the coming years. For that, I will attempt two approaches:
 
 1.  Generate synthetic data by using the coefficients obtained to calculate projected values for the EV stock in the coming years;
 

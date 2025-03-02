@@ -2,22 +2,23 @@
 
 pacman::p_load(
   # Core Data Manipulation and Tidying
-  dplyr,        # Data manipulation: filtering, summarizing, mutating, and more
-  tidyr,        # Data tidying and reshaping: pivoting, handling missing values
-  janitor,      # Clean messy data (e.g., column names) and create summary tables
+  dplyr,        # Data manipulation: filter, summarize, mutate, and more
+  tidyr,        # Data tidying: pivot, handle missing values, reshape
+  janitor,      # Clean messy data and create summary tables
   
   # Data Import and Export
   readr,        # Read flat files (CSV, TSV) into tibbles
   readxl,       # Read Excel files (.xls, .xlsx) into data frames
   basedosdados, # Access Brazilian public data via BigQuery
-  httr,         # Perform HTTP requests to interact with web APIs
+  httr,         # Perform HTTP requests for web API interactions
   archive,      # Extract files from compressed archives (.zip, .tar.gz)
   
   # Data Visualization
-  ggplot2,      # Create customizable data visualizations using the grammar of graphics
-  scales,       # Format axes and legends (e.g., percentages, currencies)
-  viridis,      # Color palettes for data visualization (colorblind-friendly)
+  ggplot2,      # Create customizable visualizations with grammar of graphics
+  scales,       # Format axes and legends (percentages, currencies)
+  viridis,      # Colorblind-friendly color palettes
   RColorBrewer, # Additional color palettes for plots
+  gridExtra,    # Arrange multiple grid-based plots on a page
   
   # String Manipulation
   stringr,      # Simple and consistent string manipulation functions
@@ -26,9 +27,9 @@ pacman::p_load(
   # Date-Time Handling
   lubridate,    # Simplify date and time parsing and manipulation
   
-  # Geographic and Spatial Data; specialized packages for Brazil
+  # Geographic and Spatial Data
   geobr,        # Access Brazilian geographic data (e.g., shapefiles)
-  deflateBR,     # Deflate nominal Brazilian Reais using price indexes
+  deflateBR,    # Deflate nominal Brazilian Reais using price indexes
   sf,           # Handle spatial/geographic data in R
   
   # Reporting and Tables
@@ -36,8 +37,8 @@ pacman::p_load(
   stargazer,    # Generate regression tables in LaTeX/HTML/text formats
   
   # Machine Learning and Statistics
-  caret,        # Comprehensive machine learning framework (classification/regression)
-  Metrics,      # Evaluate model performance (e.g., RMSE, MAE)
+  caret,        # Comprehensive machine learning framework
+  Metrics,      # Evaluate model performance (RMSE, MAE, etc.)
   glmnet,       # Regularized generalized linear models (Lasso, Ridge)
   earth,        # Multivariate Adaptive Regression Splines
   vip,          # Variable Importance Plots
@@ -45,7 +46,11 @@ pacman::p_load(
   car,          # Companion to Applied Regression (diagnostic functions)
   DescTools,    # Tools for descriptive statistics
   rsample,      # Functions for resampling data
-  plm           # Perform panel data analysis (fixed/random effects models)
+  
+  # Econometrics and Time Series Analysis
+  plm,          # Panel data analysis (fixed/random effects models)
+  urca,         # Unit root and cointegration tests for time series
+  forecast      # Time series forecasting functions and models
 )
 
 

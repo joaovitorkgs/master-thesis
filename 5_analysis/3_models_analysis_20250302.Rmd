@@ -36,22 +36,23 @@ knitr::opts_knit$set(root.dir = "C:/Users/joaov/Dropbox/R Assignments/master-the
 ```{r, include = T}
 pacman::p_load(
   # Core Data Manipulation and Tidying
-  dplyr,        # Data manipulation: filtering, summarizing, mutating, and more
-  tidyr,        # Data tidying and reshaping: pivoting, handling missing values
-  janitor,      # Clean messy data (e.g., column names) and create summary tables
+  dplyr,        # Data manipulation: filter, summarize, mutate, and more
+  tidyr,        # Data tidying: pivot, handle missing values, reshape
+  janitor,      # Clean messy data and create summary tables
   
   # Data Import and Export
   readr,        # Read flat files (CSV, TSV) into tibbles
   readxl,       # Read Excel files (.xls, .xlsx) into data frames
   basedosdados, # Access Brazilian public data via BigQuery
-  httr,         # Perform HTTP requests to interact with web APIs
+  httr,         # Perform HTTP requests for web API interactions
   archive,      # Extract files from compressed archives (.zip, .tar.gz)
   
   # Data Visualization
-  ggplot2,      # Create customizable data visualizations using the grammar of graphics
-  scales,       # Format axes and legends (e.g., percentages, currencies)
-  viridis,      # Color palettes for data visualization (colorblind-friendly)
+  ggplot2,      # Create customizable visualizations with grammar of graphics
+  scales,       # Format axes and legends (percentages, currencies)
+  viridis,      # Colorblind-friendly color palettes
   RColorBrewer, # Additional color palettes for plots
+  gridExtra,    # Arrange multiple grid-based plots on a page
   
   # String Manipulation
   stringr,      # Simple and consistent string manipulation functions
@@ -60,9 +61,9 @@ pacman::p_load(
   # Date-Time Handling
   lubridate,    # Simplify date and time parsing and manipulation
   
-  # Geographic and Spatial Data; specialized packages for Brazil
+  # Geographic and Spatial Data
   geobr,        # Access Brazilian geographic data (e.g., shapefiles)
-  deflateBr,     # Deflate nominal Brazilian Reais using price indexes
+  deflateBR,    # Deflate nominal Brazilian Reais using price indexes
   sf,           # Handle spatial/geographic data in R
   
   # Reporting and Tables
@@ -70,8 +71,8 @@ pacman::p_load(
   stargazer,    # Generate regression tables in LaTeX/HTML/text formats
   
   # Machine Learning and Statistics
-  caret,        # Comprehensive machine learning framework (classification/regression)
-  Metrics,      # Evaluate model performance (e.g., RMSE, MAE)
+  caret,        # Comprehensive machine learning framework
+  Metrics,      # Evaluate model performance (RMSE, MAE, etc.)
   glmnet,       # Regularized generalized linear models (Lasso, Ridge)
   earth,        # Multivariate Adaptive Regression Splines
   vip,          # Variable Importance Plots
@@ -79,7 +80,11 @@ pacman::p_load(
   car,          # Companion to Applied Regression (diagnostic functions)
   DescTools,    # Tools for descriptive statistics
   rsample,      # Functions for resampling data
-  plm           # Perform panel data analysis (fixed/random effects models)
+  
+  # Econometrics and Time Series Analysis
+  plm,          # Panel data analysis (fixed/random effects models)
+  urca,         # Unit root and cointegration tests for time series
+  forecast      # Time series forecasting functions and models
 )
 
 ```
@@ -763,7 +768,7 @@ fe_model_3 <- plm(log(electric) ~ log(population) + log(min_ev) + log(mean_gas) 
                   model = "within")
 
 
-stargazer(fe_model_1, fe_model_2, fe_model_3, type = "text",
+stargazer(fe_model_1, fe_model_2, fe_model_3, type = "html",
           title = "Table 5: BEV stock regressed on population size, time, vehicle prices and income with panel data and fixed effects",
           single.row = FALSE,
           dep.var.labels = c("EV stock (log)"),
@@ -779,6 +784,10 @@ stargazer(fe_model_1, fe_model_2, fe_model_3, type = "text",
           omit = "as.factor\\(months_nr\\)[0-9]+",
           intercept.bottom = TRUE)
 
+```
+
+```{r, results = 'asis', include=FALSE}
+
 
 fe_model_1_with_intercept <- within_intercept(fe_model_1, return.model = TRUE)
 fe_model_2_with_intercept <- within_intercept(fe_model_2, return.model = TRUE)
@@ -786,7 +795,7 @@ fe_model_3_with_intercept <- within_intercept(fe_model_3, return.model = TRUE)
 
 # Use these modified models in stargazer
 stargazer(fe_model_1_with_intercept, fe_model_2_with_intercept, fe_model_3_with_intercept, 
-          type = "text",
+          type = "html",
           title = "Table 5: BEV stock regressed on population size, time, vehicle prices and income with panel data and fixed effects",
           single.row = FALSE,
           dep.var.labels = c("EV stock (log)"),
@@ -1102,12 +1111,12 @@ model3 <- lm(log(electric) ~ log(population) * months_nr + log(min_ev) + log(mea
 
 
 
-beer2 <- window(ausbeer, start=1992)
-fit.beer <- tslm(beer2 ~ trend + season)
-fcast <- forecast(fit.beer)
-autoplot(fcast) +
-  ggtitle("Forecasts of beer production using regression") +
-  xlab("Year") + ylab("megalitres")
+# beer2 <- window(ausbeer, start=1992)
+# fit.beer <- tslm(beer2 ~ trend + season)
+# fcast <- forecast(fit.beer)
+# autoplot(fcast) +
+#  ggtitle("Forecasts of beer production using regression") +
+#  xlab("Year") + ylab("megalitres")
 
 ```
 
@@ -1118,9 +1127,207 @@ autoplot(fcast) +
 A different approach attempted was to forecast values using an ARIMA (acronym for "AutoRegressive Integrated Moving Average") model, which aim to describe autocorrelations in the data and predict future outcome values based on the lagged values of $y_t$ and $\epsilon_t$ as predictors. For that purpose, the **forecast** package in R has been used.
 
 ```{r}
+# Data preparation
+fleet_2013_2024_id_clean <- read_csv("3_processed_data/fleet_2013_2024_id_clean.csv")
+
+
+## Adding the variation on registered BEVs on a monthly basis to be able to use an ARIMA model
+
+fleet_df <- fleet_df %>%
+  arrange(id_municipio, date) %>%
+  group_by(id_municipio) %>%
+  mutate(new_electric = lag(electric, default = first(electric))) %>%
+  ungroup()
+
+fleet_df <- fleet_2013_2024_id_clean %>%
+  mutate(date = floor_date(date, "month")) %>%
+  group_by(year, date, sigla_uf, id_municipio,id_municipio_nome) %>%
+  summarize(
+    electric_vehicles = sum(electric),
+    total_population = sum(populacao),
+  )
+
+fleet_df <- fleet_df %>%
+  arrange(id_municipio, date) %>%
+  group_by(id_municipio) %>%
+  mutate(lag_electric = dplyr::lag(electric_vehicles)) %>%
+  ungroup() %>% 
+  mutate(new_electric = electric_vehicles - lag_electric) %>% 
+  select(-lag_electric)
+
+fleet_df$new_electric[is.na(fleet_df$new_electric)] <- 0
+
+fleet_df_uf <- fleet_df %>% 
+  group_by(year, date, sigla_uf) %>% 
+  summarize(
+    EVs_total = sum(electric_vehicles),
+    EVs_delta = sum(new_electric))
+
+fleet_df_BR <- fleet_df %>% 
+  group_by(year, date) %>% 
+  summarize(
+    EVs_total = sum(electric_vehicles),
+    EVs_delta = sum(new_electric))
+
+```
+
+<br>
+
+For these forecasting models, I have also added "`EVs_delta`" as a new variable, in order to attempt an ARIMA model based both on the total cumulative number of registered BEVs in the country in a given month, but also on the variation from on month to another.
+
+The plots below show how this variable behaved in different states, emphasizing the regional differences and the influence of some predictors (e.g. income distribution, population size) as discussed in the previous sections.
+
+```{r}
+fleet_df_uf %>% 
+  filter(year > 2018, sigla_uf != "SP") %>% 
+  ggplot(aes(x = date)) +
+  geom_line(aes(y = EVs_delta, color = "New EVs (Delta)"), size = 1) +
+  labs(
+    title = "Electric Vehicles Over Time",
+    x = "Date",
+    y = "Number of Electric Vehicles",
+    color = "Legend"
+  ) +
+  scale_color_manual(values = c("Total EVs" = "blue", "New EVs (Delta)" = "orange")) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    legend.position = "top",
+    axis.text.x = element_text(size = 8, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 8),             
+    plot.margin = margin(0, 0, 0, 0),             
+    strip.text.x = element_text(size = 10)            
+  ) +
+  facet_wrap(~ sigla_uf, nrow = 5)
+
+```
+
+<br>
+
+When looking at the aggregated data for the whole country, a similar pattern emerges. Interestingly, the plots also suggest that there might be an issue with the original data set, especially considering the abrupt change in registered vehicles between late 2019 and early 2022.
+
+```{r}
+
+fleet_df_BR %>% 
+  filter(year > 2018) %>% 
+  ggplot(aes(x = date)) +
+  geom_line(aes(y = EVs_delta, color = "New EVs (Delta)"), size = 1) +
+  labs(
+    title = "Electric Vehicles Over Time",
+    x = "Date",
+    y = "Number of New Electric Vehicles",
+    color = "Legend"
+  ) +
+  scale_color_manual(values = c("Total EVs" = "blue", "New EVs (Delta)" = "orange")) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    legend.position = "top"
+  )
 
 
 ```
+
+<br>
+
+Taking the "`EVs_delta`" variable and applying the `diff()` function, I have also obtained a different variable that corresponds to the change in variation from one month to another. This allows for a model that has non-stationary data, with better performance for the ARIMA model.
+
+```{r include=FALSE}
+# Using delta in monthly EV fleet to run projections
+
+options(scipen = 999)
+Box.test(diff(fleet_df_BR$EVs_delta), lag=10, type="Ljung-Box")
+
+fleet_df_BR$EVs_delta %>% 
+  ur.kpss %>% 
+  summary()
+
+# The test statistic obtained is higher that the 1% critical value, indicating that 
+# the data is non-stationary.
+
+fleet_df_BR_ARIMA <- fleet_df_BR 
+
+fleet_df_BR_ARIMA$EVs_delta %>% 
+  diff() %>% 
+  ur.kpss %>% 
+  summary()
+
+```
+
+<br>
+
+By using the `auto.arima()` function and specifying lack of seasonality in the data, it is possible to plot the projected variation in BEVs using the country's aggregate data. In this case, I have extrapolated the data by 10 years, which yields very large confidence intervals, but allows for some level of forecasting.
+
+```{r}
+
+fit <- auto.arima(fleet_df_BR_ARIMA$EVs_delta, seasonal = FALSE)
+
+fit %>% 
+  forecast(h=120) %>% 
+  autoplot(include = 80)
+
+```
+
+<br>
+
+I have used a different variable, `EVs_total`, which corresponds to the aggregate total fleet size of BEVs in a given month for all states, to project future values by using both ARIMA and ETS models.
+
+```{r}
+
+## Using total values to run projections 
+
+## ARIMA Model
+fit_arima <- auto.arima(fleet_df_BR_ARIMA$EVs_total, seasonal = FALSE)
+
+plot_arima_total <- fit_arima %>% 
+  forecast(h=120) %>% 
+  autoplot(include = 80)
+
+# ETS Model
+fit_ets_total <- ets(fleet_df_BR_ARIMA$EVs_total)
+
+plot_ets_total <- fit_ets_total %>% 
+  forecast(h=120) %>% 
+  autoplot()
+
+# Comparing plot
+gridExtra::grid.arrange(plot_arima_total, plot_ets_total, ncol =2)
+
+```
+
+<br>
+
+These plots show that both approaches have similar performances. By choosing the ARIMA model, I have arrived at the following predicted values for the BEV stock in Brazil in 2032, considering the mean and upper/loan bounds of the confidence interval:
+
+```{r}
+projected_arima <- fit_arima %>% 
+  forecast(h=120)
+```
+
+**Upper bound:**
+
+```{r}
+tail(projected_arima$upper, 1)
+```
+
+<br>
+
+**Mean:**
+
+```{r}
+tail(projected_arima$mean, 1)
+```
+
+<br>
+
+**Lower bound:**
+
+```{r}
+tail(projected_arima$lower, 1)
+```
+<br>
+
+While these projected values seem very large when comparing to the current stock of BEVs in Brazil, they would still represent a small share of the total fleet. Even the projected upper bound of 1.2 million vehicles, is still about 1% of the current total fleet of passenger cars of all kinds, amounting to about 123.5 million vehicles. 
 
 ------------------------------------------------------------------------
 

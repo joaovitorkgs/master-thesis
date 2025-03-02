@@ -271,6 +271,11 @@ if (!file.exists("./3_processed_data/fleet_yearly_agg_long.csv")) {
   print("File already exists in the repository")
 }
 
+yearly_results_agg_long %>% 
+  filter(year == 2024) %>% 
+  group_by(year) %>% 
+  summarize(total = sum(Count))
+
 
 
 # 3.3 Line plots to check trends in data ---------------------------------------

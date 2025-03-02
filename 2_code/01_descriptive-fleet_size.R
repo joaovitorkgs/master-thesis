@@ -100,7 +100,6 @@ if (!file.exists("./3_processed_data/fleet_electric_vehicles_all_years.csv")) {
 
 
 
-
 # 3.1 Vehicle fleet (total/electric) -------------------------------------------
 
 
@@ -139,7 +138,6 @@ if (!file.exists("./3_processed_data/fleet_electric_vehicles_per_state_23.csv"))
 } else {
   print("File already exists in the repository")
 }
-
 
 
 

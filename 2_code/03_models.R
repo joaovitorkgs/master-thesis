@@ -78,6 +78,8 @@ fleet_df_c <- fleet_df_b_uf %>%
   left_join(income_data_wide_uf, by = c("year", "sigla_uf")) %>% 
   drop_na()
 
+head(fleet_df_c, 15)
+
 
 ## 3.1. Supervised Learning ----------------------------------------------------
 

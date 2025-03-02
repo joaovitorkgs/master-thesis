@@ -6,6 +6,7 @@ source("./2_code/00_packages.R")
 # 2. Loading data sets ---------------------------------------------------------
 
 fleet_2013_2024 <- read_csv("1_raw_data/2_vehicle_fleet/frota_2013_2024.csv")
+fleet_2013_2024_clean_id <- read_csv("1_raw_data/2_vehicle_fleet/frota_2013_2024_clean_id.csv")
 
 # 3. Cleaning data --- ---------------------------------------------------------
 
@@ -38,6 +39,9 @@ if (!file.exists("./1_raw_data/2_vehicle_fleet/fleet_2013_2024_clean.csv")) {
 }
 
 
+
+fleet_2013_2024_clean %>% 
+  group_by(city)
 
 
 # 4. Data Exploration ----------------------------------------------------------

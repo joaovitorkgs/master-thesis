@@ -129,6 +129,19 @@ GHG_total_23 <- edgar_GHG_totals_by_country %>%
   filter(Country != "International Aviation") %>% 
   head(20)
 
+
+GHG_total_90 <- edgar_GHG_totals_by_country %>% 
+  select("Country", "2010") %>% 
+  rename("Emissions" = "2010") %>% 
+  arrange(desc(Emissions)) %>% 
+  filter(Country != "GLOBAL TOTAL") %>%
+  filter(Country != "International Shipping") %>% 
+  filter(Country != "International Aviation") %>% 
+  head(20)
+
+
+
+
 ## Trend for top emitting countries
 
 GHG_total_trend_20 <- edgar_GHG_totals_by_country %>% 
@@ -278,12 +291,14 @@ GHG_total_23 %>%
   coord_flip()
 
 # Better looking bar plot
-GHG_total_23 %>% 
+
+plot_bar_GHG_total_countries_23 <- 
+  GHG_total_23 %>% 
   mutate(Country = fct_reorder(Country, Emissions),
          Highlight = ifelse(Country == "Brazil", "Brazil", "Other")) %>%
   ggplot(aes(x=Country, y=Emissions, fill=Highlight)) + 
   geom_bar(stat = "identity") +
-  scale_fill_manual(values = c("Brazil" = "#FF5733", "Other" = "#4682B4")) +
+  scale_fill_manual(values = c("Brazil" = "green4", "Other" = "blue4")) +
   scale_y_continuous(labels = comma) +
   coord_flip() +
   labs(title = "Total GHG Emissions by Country in 2023",
@@ -298,14 +313,45 @@ GHG_total_23 %>%
         axis.text.y = element_text(size=10),
         axis.text.x = element_text(size=10),
         axis.title.x = element_text(size=12),
-        axis.title.y = element_text(size=12)) +
+        axis.title.y = element_text(size=12),
+        plot.background = element_rect(fill="white")) +
   geom_text(aes(label=round(Emissions)), 
             hjust=-0.1, size=3)
 
+
+if (!file.exists("./4_plots/plot_bar_GHG_total_countries_23.png")) {
+  ggsave("./4_plots/plot_bar_GHG_total_countries_23.png",
+         plot = plot_bar_GHG_total_countries_23,
+         width  = 8,
+         height = 5)
+  print("File saved in the repository.")
+} else {
+  print("File already exists in the repository.")
+}
+
+
 # Line plot
-GHG_total_trend_6 %>% 
+plot_trend_GHG_total_countries <- 
+  GHG_total_trend_6 %>% 
+  mutate(Country = fct_relevel(Country, 
+                               "China", 
+                               "United States", 
+                               "India", 
+                               "EU27", 
+                               "Russia", 
+                               "Brazil")) %>%
   ggplot(aes(x = year, y = emissions, color = Country)) +
   geom_line(size = 1) +
+  scale_color_manual(
+    values = c(
+      "China" = "#EE1C25",
+      "United States" = "#b22234",
+      "India" = "#ff9933",
+      "EU27" = "#003399",
+      "Russia" = "lightblue3",
+      "Brazil" = "#009739"
+    )
+  ) +
   scale_y_log10(
     breaks = trans_breaks("log10", function(x) 10^x),
     labels = label_number(accuracy = 1) # Adjust accuracy as needed
@@ -315,5 +361,17 @@ GHG_total_trend_6 %>%
        x = "Year",
        y = "Emissions (Mt CO2eq/yr)",
        color = "Country") +
-  theme_bw()
+  theme_bw() +
+  theme(
+    plot.title.position = "plot", # Align title and subtitle to the left
+  )
 
+if (!file.exists("./4_plots/plot_trend_GHG_total_countries.png")) {
+  ggsave("./4_plots/plot_trend_GHG_total_countries.png",
+         plot = plot_trend_GHG_total_countries,
+         width  = 8,
+         height = 5)
+  print("File saved in the repository.")
+} else {
+  print("File already exists in the repository.")
+}

@@ -746,6 +746,46 @@ The regression with the most variables seems to perform well, based on the stati
 
 As for the effect of income — measured here as the annual average taxable income of the 50th and 100th top percentiles — in each state, the median average income seems to have a positive correlation, but the average income of the top earners in Brazilian states has no statistically significant effect, with an unexpected negative correlation.
 
+When testing whether the models are able to predict past data, the line indicating fitted data seems to follow the actual observed data quite well:
+
+```{r}
+
+# Add fitted values to the dataset
+fleet_df_c$fitted_1 <- model1$fitted.values
+fleet_df_c$fitted_2 <- model2$fitted.values
+fleet_df_c$fitted_3 <- model3$fitted.values
+
+fleet_df_models <- fleet_df_c %>% 
+  ungroup() %>% 
+  select(sigla_uf, date, year, month, electric, fitted_1, fitted_2, fitted_3) %>% 
+  group_by(date) %>% 
+  summarize(
+    electric = sum(log(electric)),
+    fitted_1 = sum(fitted_1),
+    fitted_2 = sum(fitted_2),
+    fitted_3 = sum(fitted_3),
+  )
+
+ggplot(fleet_df_models) +
+  geom_line(aes(x = date, y = electric, color = "Electric"), size = 1) +
+  geom_line(aes(x = date, y = fitted_3, color = "Fitted"), size = 0.5) +
+  labs(
+    title = "BEV Stock in Brazil: observed vs. fitted values",
+    x = "Date",
+    y = "BEV Stock (log transformed)",
+    colour = "Data/Model"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.title = element_text(size = rel(1)),
+    legend.text = element_text(size = rel(0.9))
+)
+
+
+```
+
+
+
 ## Panel Data and Fixed-Effects
 
 As an improvement to the linear regressions above, the following regressions incorporate fixed effects for the used units of observations (i.e. states), in order to focus on variance within units and account for the natural and significant differences between states.
@@ -962,187 +1002,106 @@ Additionally, time-related variables (`years` and `months_nr`) also are relevant
 
 <br>
 
-## Multivariate Adaptive Regression Splines
-
-Multivariate Adaptive Regression Splines (MARS) will be employed to explore nonlinear model terms with automatic functions, by using the **earth** package. The goal will be to run algorithms with nonlinear model terms, with interaction effects, squared terms and other transformations, such as step functions.
-
-Using the same data, these are the most important coefficients identified by the algorithm, as well as the number of terms selected and interactions.
-
-```{r}
-
-fleet_df_d <- fleet_df_c %>% 
-  select(-c(population, date, year))
-
-# Creating the MARS model object
-mars1 <- earth(
-  log(electric) ~ .,
-  data = fleet_df_d
-)
-
-summary(mars1)
-
-```
-
-<br>
-
-The summary of the MARS model indicates a high value for its R², which is a good performance for the model. Also, the 15 of the predictors have been kept, with 30 terms selected for the best performing model. The plot below shows the performance of the algorithm being used and the selected model based on number of terms and RSq and GRSq values.
-
-```{r}
-
-# Ploting the model selection
-plot(mars1, which = 1)
-
-```
-
-<br>
-
-```{r include=FALSE}
-mars2 <- earth(
-  log(electric) ~ .,
-  data = fleet_df_d,
-  degree = 2
-)
-
-# Summary of the most important predictors and interactions
-summary(mars2) %>% .$coefficients %>% head(10)
-
-# Preparing a grid with hyperparameters
-hyper_grid <- expand.grid(
-  degree = 1:3, 
-  nprune = seq(2, 100, length.out = 10) %>% floor()
-)
-
-```
-
-```{r include=FALSE}
-
-# Training the algorithm 
-set.seed(123)  # for reproducibility
-cv_mars <- train(
-  x = subset(fleet_df_d, select = -electric),
-  y = fleet_df_d$electric,
-  method = "earth",
-  metric = "RMSE",
-  trControl = trainControl(method = "cv", number = 10),
-  tuneGrid = hyper_grid
-)
-
-# Finding the best hyperparameters
-cv_mars$bestTune
-
-# Plotting the RMSE according to the number of terms
-ggplot(cv_mars)
-
-```
-
-```{r include = FALSE}
-cv_mars$results %>%
-  filter(nprune == cv_mars$bestTune$nprune, degree == cv_mars$bestTune$degree)
-
-```
-
-```{r include = FALSE}
-
-# Mapping out the most relevant predictors
-p1 <- vip(cv_mars, num_features = 25, geom = "point", value = "gcv") + ggtitle("GCV")
-p2 <- vip(cv_mars, num_features = 25, geom = "point", value = "rss") + ggtitle("RSS")
-
-# Population and log_pop are coming up as the most important predictors
-# Maybe I should use a different predictor instead?
-
-gridExtra::grid.arrange(p1, p2, ncol = 2)
-
-```
-
-```{r include=FALSE}
-
-# Check for interactions
-cv_mars$finalModel %>%
-  coef() %>%  
-  broom::tidy() %>%  
-  filter(stringr::str_detect(names, "\\*")) 
-# So far, the model is not yielding any relevant variables
-
-
-cv_mars$finalModel %>%
-  coef() %>%  
-  broom::tidy() %>%  
-  filter(stringr::str_detect(names, "\\*")) 
-
-# Construct partial dependence plots
-p1 <- partial(cv_mars, pred.var = "months_nr", grid.resolution = 10) %>% 
-  autoplot()
-p2 <- partial(cv_mars, pred.var = "log_pop", grid.resolution = 10) %>% 
-  autoplot()
-p3 <- partial(cv_mars, pred.var = c("months_nr", "log_pop"), 
-              grid.resolution = 10) %>% 
-  plotPartial(levelplot = FALSE, zlab = "yhat", drape = TRUE, colorkey = TRUE, 
-              screen = list(z = -20, x = -60))
-
-# Display plots side by side
-gridExtra::grid.arrange(p1, p2, p3, ncol = 3)
-
-
-
-```
-
-<br>
-
 ------------------------------------------------------------------------
 
 # Forecasting
 
-## Testing Models Goodness of Fit
+## Time Series
 
+First step was to test how well the model was able to predict past data. To do that, I have used the same linear regression models from the previous sections, but by transforming the dataframe in a time series object and using the `tslm` function of the **forecast** package.
 
 ```{r}
-
-library(forecast)
-
-model1 <- lm(log(electric) ~ log(population) * months_nr, 
-             data = fleet_df_c)
-
-model2 <- lm(log(electric) ~ log(population) * months_nr + log(min_ev) + log(mean_gas) + log(mean_hyb),
-             data = fleet_df_c)
-
-model3 <- lm(log(electric) ~ log(population) * months_nr + log(min_ev) + log(mean_gas) + log(mean_hyb) +
-               log(avg_taxable_income_50) + log(avg_taxable_income_100),
-             data = fleet_df_c)
-
-# Add fitted values to the dataset
-fleet_df_c$fitted_1 <- model1$fitted.values
-fleet_df_c$fitted_2 <- model2$fitted.values
-fleet_df_c$fitted_3 <- model3$fitted.values
-
-fleet_df_models <- fleet_df_c %>% 
+fleet_df_ts <- fleet_df_c %>% 
   ungroup() %>% 
-  select(sigla_uf, date, year, month, electric, fitted_1, fitted_2, fitted_3) %>% 
+  select(sigla_uf, date, year, month, electric, population, min_ev, mean_gas, mean_hyb, avg_taxable_income_50, avg_taxable_income_100) %>% 
   group_by(date) %>% 
   summarize(
-    electric = sum(log(electric)),
-    fitted_1 = sum(fitted_1),
-    fitted_2 = sum(fitted_2),
-    fitted_3 = sum(fitted_3),
+    electric                = sum(electric),
+    population              = sum(population),
+    min_ev                  = mean(min_ev),
+    mean_gas                = mean(mean_gas),
+    mean_hyb                = mean(mean_hyb),
+    avg_taxable_income_50   = mean(avg_taxable_income_50),
+    avg_taxable_income_100  = mean(avg_taxable_income_100),
+    log_electric               = log(electric),
+    log_population             = log(population),
+    log_min_ev                 = log(min_ev),
+    log_mean_gas               = log(mean_gas),
+    log_mean_hyb               = log(mean_hyb),
+    log_avg_taxable_income_50  = log(avg_taxable_income_50),
+    log_avg_taxable_income_100 = log(avg_taxable_income_100)
+  ) %>% 
+  mutate(
+    electric   = if_else(date == as.Date("2018-06-01"), electric   / 2, electric),
+    population = if_else(date == as.Date("2018-06-01"), population / 2, population)
   )
 
-ggplot(fleet_df_models) +
-  geom_line(aes(x = date, y = electric, color = "Electric"), size = 1) +
-  geom_line(aes(x = date, y = fitted_1, color = "Fitted_1"), size = 0.5) +
-  geom_line(aes(x = date, y = fitted_2, color = "Fitted_2"), size = 0.5) +
-  geom_line(aes(x = date, y = fitted_3, color = "Fitted_3"), size = 0.5) +
-  labs(
-    title = "BEV Stock in Brazil: observed vs. fitted values",
-    x = "Date",
-    y = "BEV Stock (log transformed)",
-    colour = "Data/Model"
-  ) +
-  theme_minimal() +
-  theme(
-    legend.title = element_text(size = rel(1)),
-    legend.text = element_text(size = rel(0.9))
+fleet_df_ts <- fleet_df_ts %>% arrange(date)
+
+# Extract start year and month
+start_year <- as.numeric(format(min(fleet_df_ts$date), "%Y"))
+start_month <- as.numeric(format(min(fleet_df_ts$date), "%m"))
+
+
+# Convert to a multivariate time series object
+multivariate_ts <- ts(
+  fleet_df_ts,
+  start = c(start_year, start_month),
+  frequency = 12
 )
 
+ts_model_1 <- tslm(log_electric ~ 
+                   log_population * 
+                   date,
+             data = multivariate_ts)
+
+
+ts_model_2 <- tslm(log_electric ~ 
+                   log_population * 
+                   date + 
+                   log_min_ev + 
+                   log_mean_gas + 
+                   log_mean_hyb,
+             data = multivariate_ts)
+
+ts_model_3 <- tslm(log_electric ~ 
+                   log_population * 
+                   date + 
+                   log_min_ev + 
+                   log_mean_gas + 
+                   log_mean_hyb +
+                   log_avg_taxable_income_50 +
+                   log_avg_taxable_income_100,
+             data = multivariate_ts)
+
+
+ts_model_exp <- tslm(electric ~ trend, lambda = 0, data = multivariate_ts)
+
+autoplot(multivariate_ts[,'log_electric'], series="Data") +
+  autolayer(fitted(ts_model_3), series="Fitted") +
+  xlab("Year/Month") + ylab("BEV Stock (log transformed)") +
+  guides(colour=guide_legend(title=" "))
+
+
+
 ```
+
+<br>
+
+When forecasting using an exponential model from the time series regression, considering a horizon of about 7 years from the last date in the model: 
+
+```{r}
+h = 90
+fcast <- forecast(ts_model_exp, h=h)
+
+autoplot(fcast)
+
+
+```
+
+<br>
+
+
 
 <br>
 
@@ -1352,9 +1311,10 @@ tail(projected_arima$mean, 1)
 ```{r}
 tail(projected_arima$lower, 1)
 ```
+
 <br>
 
-While these projected values seem very large when comparing to the current stock of BEVs in Brazil, they would still represent a small share of the total fleet. Even the projected upper bound of 1.2 million vehicles, is still about 1% of the current total fleet of passenger cars of all kinds, amounting to about 123.5 million vehicles. 
+While these projected values seem very large when comparing to the current stock of BEVs in Brazil, they would still represent a small share of the total fleet. Even the projected upper bound of 1.2 million vehicles, is still about 1% of the current total fleet of passenger cars of all kinds, amounting to about 123.5 million vehicles.
 
 ------------------------------------------------------------------------
 

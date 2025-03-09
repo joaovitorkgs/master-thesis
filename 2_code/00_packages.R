@@ -50,7 +50,9 @@ pacman::p_load(
   # Econometrics and Time Series Analysis
   plm,          # Panel data analysis (fixed/random effects models)
   urca,         # Unit root and cointegration tests for time series
-  forecast      # Time series forecasting functions and models
+  forecast,     # Time series forecasting functions and models
+  
+  forcats
 )
 
 

@@ -10,6 +10,8 @@ edgar_GHG_CO2_per_sector        <- read_excel("1_raw_data/7_GHG_emissions/edgar_
 edgar_GHG_totals_by_country     <- read_excel("1_raw_data/7_GHG_emissions/edgar_GHG_totals_by_country.xlsx")
 edgar_GHG_per_capita_by_country <- read_excel("1_raw_data/7_GHG_emissions/edgar_GHG_per_capita_by_country.xlsx")
 edgar_GHG_per_GDP_by_country    <- read_excel("1_raw_data/7_GHG_emissions/edgar_GHG_per_GDP_by_country.xlsx")
+edgar_GHG_by_sector_and_country <- read_excel("1_raw_data/7_GHG_emissions/edgar_GHG_by_sector_and_country.xlsx")
+
 
 ## 2.2. Big query data ---------------------------------------------------------
 
@@ -115,6 +117,55 @@ if (!file.exists(  "./3_processed_data/BRA_CO2_per_sector_longer.csv")) {
 BRA_CO2_per_sector_longer %>% 
   group_by(Sector) %>% 
   summarize(total = sum(emissions))
+
+
+## Brazilian GHG emission per Gas Type -----------------------------------------
+
+Brazil_GHG_profil <- edgar_GHG_by_sector_and_country %>% 
+  filter(Country == "Brazil") %>% 
+  pivot_longer(
+    cols = "1970":"2023",
+    values_to = "emissions") %>% 
+  rename(year = name) %>% 
+  mutate(Year = as.numeric(year)) %>% 
+  group_by(Substance, Country, Year) %>% 
+  summarize(
+    Emissions = sum(emissions)
+  )
+
+Brazil_GHG_profil_23 <- Brazil_GHG_profil %>% 
+  filter(Year == 2023)
+
+## Comparison with other countries
+
+Top6_GHG_profile <- edgar_GHG_by_sector_and_country %>% 
+  filter(Country %in% c(
+    "China",
+    "United States",
+    "India",
+    "EU27",
+    "Russia",
+    "Brazil")) %>% 
+  select(-"EDGAR Country Code") %>% 
+  pivot_longer(
+    cols = "1970":"2023",
+    values_to = "emissions"
+  ) %>% 
+  rename(year = name) %>% 
+  mutate(year = as.numeric(year)) 
+
+Top6_GHG_profile_23 <- Top6_GHG_profile %>% 
+  filter(year == 2023) %>% 
+  group_by(Country, Substance) %>% 
+  summarize(Emissions = sum(emissions)) %>% 
+  mutate(Substance = case_when(
+    Substance == "CO2" ~ "CO\u2082",
+    Substance == "GWP_100_AR5_CH4" ~ "CH\u2084",
+    Substance == "GWP_100_AR5_F-gases" ~ "F-gases",
+    Substance == "GWP_100_AR5_N2O" ~ "N\u2082O",
+    TRUE ~ Substance
+  ))
+
 
 ## List of countries per GHG emission ------------------------------------------
 
@@ -281,7 +332,80 @@ plot_trend_GHG_transportation_yearly_BR <-
 
 
 
+
+### Share per Substance type ---------------------------------------------------
+
+Brazil_GHG_profil_23 %>%
+  mutate(prop = Emissions / sum(Brazil_GHG_profil_23$Emissions) * 100,
+         ypos = cumsum(prop) - 0.5 * prop) %>%
+  ggplot(aes(x = "", y = prop, fill = Substance)) +
+  geom_col(width = 1, color = "white") +
+  coord_polar(theta = "y", start = 0) +
+  geom_text(aes(label = paste0(round(prop, 1), "%")),
+            position = position_stack(vjust = 0.5),
+            color = "white", size = 3) +
+  scale_fill_brewer(palette = "Set1") +
+  theme_void() +
+  theme(legend.position = "right",
+        legend.title = element_blank())
+
+
+pie(Brazil_GHG_profil_23$Emissions,
+    labels = c("CO2", "CH4", "F-gases", "N20")) 
+
+
+
+# Plotting the comparison between countries
+
+Top6_GHG_profile_23_relative <- Top6_GHG_profile_23 %>%
+  group_by(Country) %>%
+  mutate(Relative_Emissions = Emissions / sum(Emissions) * 100)
+
+# Calculate relative percentages of emissions per substance within each country
+Top6_GHG_profile_23_relative <- Top6_GHG_profile_23 %>%
+  group_by(Country) %>%
+  mutate(Relative_Emissions = Emissions / sum(Emissions) * 100) %>% 
+  mutate(Country = factor(Country, levels = c("Brazil", "Russia", "EU27", "India", "United States", "China")))
+
+
+# Create a horizontal stacked bar plot
+
+plot_share_GHG_per_substance_Top6 <- 
+ggplot(Top6_GHG_profile_23_relative, aes(x = Country, y = Relative_Emissions, fill = Substance)) +
+  geom_bar(stat = "identity") +
+  coord_flip() + # Makes the bar plot horizontal
+  labs(
+    title = "Relative Emission Levels per Substance by Country",
+    subtitle = "Source: EDGAR (Emissions Database for Global Atmospheric Research) Community GHG Database",
+    x = "Country",
+    y = "Relative Emissions (%)",
+    fill = "Substance"
+  ) +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) + # Show percentages on y-axis
+  scale_fill_brewer(palette = "Set2", 
+                    labels = c(expression(CH[4]), expression(CO[2]), "F-gases", expression(N[2]~O))) +
+  theme_minimal() +
+  theme(
+    legend.title  = element_text(size = 10),
+    legend.text   = element_text(size = 9),
+    plot.background = element_rect(fill="white")) 
+
+if (!file.exists("./4_plots/plot_share_GHG_per_substance_Top6.png")) {
+  ggsave("./4_plots/plot_share_GHG_per_substance_Top6.png",
+         plot = plot_share_GHG_per_substance_Top6,
+         width  = 9,
+         height = 4)
+  print("File saved in the repository.")
+} else {
+  print("File already exists in the repository.")
+}
+
+
+
+
 ## 4.2. Global Emissions -------------------------------------------------------
+
+That
 
 # Simple bar plot
 GHG_total_23 %>% 

@@ -11,7 +11,7 @@ edgar_GHG_totals_by_country     <- read_excel("1_raw_data/7_GHG_emissions/edgar_
 edgar_GHG_per_capita_by_country <- read_excel("1_raw_data/7_GHG_emissions/edgar_GHG_per_capita_by_country.xlsx")
 edgar_GHG_per_GDP_by_country    <- read_excel("1_raw_data/7_GHG_emissions/edgar_GHG_per_GDP_by_country.xlsx")
 edgar_GHG_by_sector_and_country <- read_excel("1_raw_data/7_GHG_emissions/edgar_GHG_by_sector_and_country.xlsx")
-
+br_seeg_emissoes_brasil         <- read_csv("1_raw_data/7_GHG_emissions/br_seeg_emissoes_brasil.csv")
 
 ## 2.2. Big query data ---------------------------------------------------------
 
@@ -118,6 +118,16 @@ BRA_CO2_per_sector_longer %>%
   group_by(Sector) %>% 
   summarize(total = sum(emissions))
 
+# AFOLU emissions only
+BRA_GHG_AFOLU <- br_seeg_emissoes_brasil %>% 
+  select(ano,nivel_1,tipo_emissao,gas,emissao)
+
+BRA_GHG_AFOLU_trend <- BRA_GHG_AFOLU %>% 
+  group_by(ano) %>% 
+  summarize(emissions = sum(emissao)) %>% 
+  filter(ano > 2005)
+
+# CO2e
 
 ## Brazilian GHG emission per Gas Type -----------------------------------------
 
@@ -274,6 +284,7 @@ GHG_gdp_23 <- edgar_GHG_per_GDP_by_country %>%
 
 
 # Not sure how to interpret this either
+
 
 
 

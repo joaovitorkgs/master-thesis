@@ -12,6 +12,8 @@ edgar_GHG_per_capita_by_country <- read_excel("1_raw_data/7_GHG_emissions/edgar_
 edgar_GHG_per_GDP_by_country    <- read_excel("1_raw_data/7_GHG_emissions/edgar_GHG_per_GDP_by_country.xlsx")
 edgar_GHG_by_sector_and_country <- read_excel("1_raw_data/7_GHG_emissions/edgar_GHG_by_sector_and_country.xlsx")
 br_seeg_emissoes_brasil         <- read_csv("1_raw_data/7_GHG_emissions/br_seeg_emissoes_brasil.csv")
+br_seeg_emissoes_brasil_site    <- read_csv("1_raw_data/7_GHG_emissions/br_seeg_emissoes_brasil_site.csv")
+
 
 ## 2.2. Big query data ---------------------------------------------------------
 
@@ -127,7 +129,9 @@ BRA_GHG_AFOLU_trend <- BRA_GHG_AFOLU %>%
   summarize(emissions = sum(emissao)) %>% 
   filter(ano > 2005)
 
-# CO2e
+
+
+
 
 ## Brazilian GHG emission per Gas Type -----------------------------------------
 
@@ -319,8 +323,62 @@ if (!file.exists("./4_plots/plot_trend_GHG_per_sector_yearly_BR.png")) {
   print("File saved in the repository.")
   } else {
     print("File already exists in the repository.")
-    }
+  }
 
+
+BRA_CO2_per_sector_longer_SEEG <- 
+  br_seeg_emissoes_brasil_site %>% 
+  pivot_longer(
+  cols = "1990":"2023",
+  values_to = "emissions") %>% 
+  mutate(Categoria = case_when(
+    Categoria == "Agropecuária" ~ "Agriculture",
+    Categoria == "Energia" ~ "Energy",
+    Categoria == "Mudança de Uso da Terra e Floresta" ~ "Land Use Change and Forestry",
+    Categoria == "Processos Industriais" ~ "Industrial Processes",
+    Categoria == "Resíduos" ~ "Waste",
+    TRUE ~ Categoria
+  )) %>% 
+  rename()
+
+BRA_CO2_per_sector_longer_SEEG %>% 
+  group_by(Categoria) %>% 
+  summarize(total = sum(emissions))
+
+### AFOLU only -----------------------------------------------------------------
+
+options(scipen=999)
+
+plot_trend_BRA_GHG_sectors_SEEG <- BRA_CO2_per_sector_longer_SEEG %>% 
+  mutate(ano = as.numeric(name),
+         emissions = emissions/1000000) %>%  
+  ggplot(aes(x = ano, y = emissions, color = Categoria, group = Categoria)) +
+  geom_line(linewidth = 1) +
+  scale_x_continuous(
+    breaks = seq(1990, 2023, by = 5),  # Show years at 5-year intervals for readability
+    labels = seq(1990, 2023, by = 5)
+  ) +
+  labs(title = "CO2 Emissions in Brazil by Sector from 1990 to 2023",
+       subtitle = "Source: System for Estimating Greenhouse Gas Emissions and Removals (SEEG)",
+       x = "Year",
+       y = "Emissions (Mt CO2e)",
+       color = "Sector") +
+  theme_bw() +
+  theme(
+    legend.position = "right",
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+
+if (!file.exists("./4_plots/plot_trend_BRA_GHG_sectors_SEEG.png")) {
+  ggsave("./4_plots/plot_trend_BRA_GHG_sectors_SEEG.png",
+         plot = plot_trend_BRA_GHG_sectors_SEEG,
+         width  = 7,
+         height = 5)
+  print("File saved in the repository.")
+  } else {
+    print("File already exists in the repository.")
+    }
 
 ### Transport Sector only ------------------------------------------------------
 

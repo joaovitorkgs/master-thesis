@@ -254,6 +254,7 @@ if (!file.exists("./3_processed_data/fleet_yearly_state_long.csv")) {
 }
 
 
+yearly_results_aggregate <- read.csv("./3_processed_data/fleet_yearly_state_wide.csv")
 
 # Pivoted table per category
 yearly_results_agg_long <- yearly_results_aggregate %>% 
@@ -339,8 +340,8 @@ ggsave("./4_plots/plot_trend_other_agg.png",
 # All vehicles (aggregate, compared across categories)
 
 plot_trend_compared_cat <- ggplot(yearly_results_agg_long, aes(x = as.integer(year), y = Count, color = Category)) +
-  geom_line(linewidth = 2) +
-  geom_point(size = 3) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
   theme_bw() +
   scale_x_continuous(breaks = seq(2013, 2024, by = 1)) +
   scale_y_continuous(
@@ -358,12 +359,23 @@ plot_trend_compared_cat <- ggplot(yearly_results_agg_long, aes(x = as.integer(ye
     title = "Evolution of Registered Vehicles in Brazil per Combustible Type",
     subtitle = "Source: National Traffic Secretariat, 2024",
     color = "Category"
+  )+
+  scale_color_manual(
+    values = c(
+      "Electric" = "orange3",   # Teal
+      "Hybrid" = "turquoise3",     # Orange
+      "Gasoline" = "red4",   # Purple
+      "Diesel" = "#e7298a",     # Pink
+      "Other" = "red4"       # Green
+    )
   )
 
 plot_trend_compared_cat
 
 ggsave("./4_plots/plot_trend_compared_cat.png",
-        plot   = plot_trend_compared_cat)
+        plot   = plot_trend_compared_cat,
+        height = 4,
+        width  = 8)
 
 
 

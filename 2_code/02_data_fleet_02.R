@@ -40,10 +40,6 @@ if (!file.exists("./1_raw_data/2_vehicle_fleet/fleet_2013_2024_clean.csv")) {
 
 
 
-fleet_2013_2024_clean %>% 
-  group_by(city)
-
-
 # 4. Data Exploration ----------------------------------------------------------
 
 

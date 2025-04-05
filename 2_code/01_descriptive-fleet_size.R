@@ -166,7 +166,7 @@ map_total_e_vehicles <- ggplot() +
     subtitle = "Sum of Electrical Vehicles per State",
     fill = "Total Vehicles") +
   geom_sf_text(data=electric_vehicles_per_state, aes(label=abbrev_state), size=2, color="black") +
-  scale_fill_distiller(palette="Purples", name="Total Vehicles", direction = 1, labels = scales::comma_format()) + 
+  scale_fill_distiller(palette="Blues", name="Registered BEVs", direction = 1, labels = scales::comma_format()) + 
   theme_minimal() +
   theme(
     plot.title = element_text(size = 16, face = "bold"),
@@ -190,7 +190,7 @@ map_share_of_e_vehicles <- ggplot() +
     subtitle = "Percentage of Electrical Vechile from Total Fleet per State",
     fill = "Vehicles per Capita") +
   geom_sf_text(data=electric_vehicles_per_state, aes(label=abbrev_state), size=2, color="black") +
-  scale_fill_distiller(palette="BuPu", name="% of Total Fleet", direction = 1) + 
+  scale_fill_distiller(palette="Blues", name="% of Total Fleet", direction = 1) + 
   theme_minimal() +
   theme(
     plot.title = element_text(size = 16, face = "bold"),
@@ -238,7 +238,7 @@ map_e_vehicles_per_capita <- ggplot() +
     subtitle = "Electric Vehicle per Capita per State",
     fill = "Vehicles per Capita") +
   geom_sf_text(data=electric_vehicles_per_state, aes(label=abbrev_state), size=2, color="black") +
-  scale_fill_distiller(palette="Blues", name="Electric Vehicles per Capita", direction = 1) + 
+  scale_fill_distiller(palette="Blues", name="BEVs per Capita", direction = 1) + 
   theme_minimal() +
   theme(
     plot.title = element_text(size = 16, face = "bold"),
@@ -253,3 +253,38 @@ map_e_vehicles_per_capita <- ggplot() +
 map_e_vehicles_per_capita
 ggsave("./4_plots/map_e_vehicles_per_capita.png", plot = map_e_vehicles_per_capita)
 
+## 4.2. Combined maps ---------------------------------------------------------
+
+library(patchwork)
+
+# Modify individual plots to remove titles and adjust subtitles
+map_total_e_vehicles <- map_total_e_vehicles + 
+  labs(title = NULL, subtitle = "(a) Total Registered BEVs")  # Panel 1 label
+
+map_share_of_e_vehicles <- map_share_of_e_vehicles + 
+  labs(title = NULL, subtitle = "(b) Registered BEVs as share of total fleet")  # Panel 2 label
+
+map_e_vehicles_per_capita <- map_e_vehicles_per_capita + 
+  labs(title = NULL, subtitle = "(c) Registered BEVs per Capita")  # Panel 4 label
+
+options(scipen = 999)
+
+# Combine plots
+combined_map <- (
+  map_total_e_vehicles | map_share_of_e_vehicles) + 
+  plot_layout(nrow = 1) +  # 1x3 layout
+  plot_annotation(
+    title = "Electric Vehicle Distribution in Brazil by State",
+    theme = theme(
+      plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
+      plot.margin = margin(10, 10, 10, 10)
+    )
+  )
+
+ggsave(
+  "./4_plots/combined_map.png",
+  combined_map,
+  width = 15,  # Wider canvas for 4 panels
+  height = 5,
+  dpi = 300
+)

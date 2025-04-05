@@ -303,6 +303,7 @@ deflateBR::deflate(nominal_values = 130000,
 
 dates <- seq(as.Date("2013-01-01"), as.Date("2018-11-01"), by = "month")
 
+
 # Create the initial dataframe with the date column
 synth_ev_price <- data.frame(date = dates)
 
@@ -370,7 +371,7 @@ ggplot(fipe_price_ev, aes(x = log(def_price))) +
 
 ### Hybrid ---------------------------------------------------------------------
 
-ggplot(fipe_price_hybrid, aes(x = valor)) +
+ggplot(fipe_price_hybrid, aes(x = def_price)) +
   geom_histogram(bins = 25, fill = "blue", alpha = 0.7) +
   facet_wrap(~ anoReferencia, ncol = 3) +
   scale_x_log10(
@@ -386,7 +387,7 @@ ggplot(fipe_price_hybrid, aes(x = valor)) +
 
 ### Gasoline  ------------------------------------------------------------------
 
-ggplot(fipe_price_gasoline, aes(x = valor)) +
+ggplot(fipe_price_gasoline, aes(x = def_price)) +
   geom_histogram(bins = 25, fill = "blue", alpha = 0.7) +
   facet_wrap(~ anoReferencia, ncol = 3) +
   scale_x_log10(
@@ -404,8 +405,8 @@ ggplot(fipe_price_gasoline, aes(x = valor)) +
 ## 4.2. Line charts (yearly trends) ---------------------------------------------
 ### Average price (Nominal) ----------------------------------------------------
 
-plot_trend_yearly_avg_prices_nominal <- 
-  ggplot(fipe_price_trends_nominal, aes(x = anoReferencia)) +
+plot_trend_yearly_avg_prices_deflated <- 
+  ggplot(fipe_price_trends_deflated, aes(x = anoReferencia)) +
   geom_line(aes(y = avg_price_electric, color = "Electric"), size = 1) +
   geom_line(aes(y = avg_price_hybrid,   color = "Hybrid"), size = 1) +
   geom_line(aes(y = avg_price_gasoline, color = "Gasoline"), size = 1) +
@@ -436,20 +437,19 @@ plot_trend_yearly_avg_prices_nominal <-
     plot.background = element_rect(fill = "#ffffff", color = NA)
   )
 
-ggsave("./4_plots/plot_trend_yearly_avg_prices_nominal.png",
-       plot = plot_trend_yearly_avg_prices_nominal)
+ggsave("./4_plots/plot_trend_yearly_avg_prices_deflated.png",
+       plot = plot_trend_yearly_avg_prices_deflated)
 
 
 ### Average price (Deflated) ---------------------------------------------------
 
-plot_trend_yearly_avg_prices_deflated <- 
-ggplot(fipe_price_trends_deflated, aes(x = anoReferencia)) +
+plot_trend_yearly_avg_prices_deflated <- ggplot(fipe_price_trends_deflated, aes(x = anoReferencia)) +
   geom_line(aes(y = avg_price_electric, color = "Electric"), size = 1) +
   geom_line(aes(y = avg_price_hybrid,   color = "Hybrid"), size = 1) +
   geom_line(aes(y = avg_price_gasoline, color = "Gasoline"), size = 1) +
   scale_color_manual(
     name = "Fuel Type",
-    values = c("Electric" = "blue", "Hybrid" = "green", "Gasoline" = "red")
+    values = c("Electric" = "orange3", "Hybrid" = "turquoise3", "Gasoline" = "red4")
   ) +
   scale_y_log10(
     breaks = c(10000, 20000, 50000, 100000, 200000, 500000), # Logarithmic progression
@@ -457,8 +457,8 @@ ggplot(fipe_price_trends_deflated, aes(x = anoReferencia)) +
     limits = c(10000, 600000)
   ) +
   scale_x_continuous(
-    breaks = 2013:2022, # Ensure all years from 2013 to 2022 are shown
-    labels = as.character(2013:2022) # Convert to character for cleaner labels
+    breaks = 2013:2022,
+    labels = as.character(2013:2022)
   ) +
   labs(
     x = "Year",
@@ -467,11 +467,12 @@ ggplot(fipe_price_trends_deflated, aes(x = anoReferencia)) +
     subtitle = "Source: Peixoto, 2022",
     caption = "\nData scrapped from the Fundação Instituto de Pesquisas Econômicas (FIPE)\ntable for average prices observed nationally in Brazil."
   ) +
-  theme_minimal() +
+  theme_minimal() + # Changed to theme_minimal for consistency
   theme(
     legend.position = "right",
     axis.text.x = element_text(angle = 45, hjust = 1),
-    plot.background = element_rect(fill = "#ffffff", color = NA)
+    panel.grid.major.y = element_line(color = "gray", linetype = "dashed"), # Dashed grid lines for y-axis
+    plot.background = element_rect(fill = "#ffffff", color = NA),
   )
 
 ggsave("./4_plots/plot_trend_yearly_avg_prices_deflated.png",

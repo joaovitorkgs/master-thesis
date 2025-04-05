@@ -52,7 +52,10 @@ pacman::p_load(
   urca,         # Unit root and cointegration tests for time series
   forecast,     # Time series forecasting functions and models
   
-  forcats
+  forcats,
+  astsa,
+  xts,
+  ggfortify
 )
 
 

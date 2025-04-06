@@ -55,7 +55,8 @@ pacman::p_load(
   forcats,
   astsa,
   xts,
-  ggfortify
+  ggfortify,
+  seasonal
 )
 
 

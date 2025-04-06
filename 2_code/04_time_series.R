@@ -139,8 +139,15 @@ ts_model_3 <- tslm(log_electric ~
                      log_avg_taxable_income_100,
                    data = multivariate_ts)
 
+checkresiduals(ts_model_3)
+
+
+options(scipen = 999)
+summary(ts_model_3)
 
 ts_model_exp <- tslm(electric ~ trend, lambda = 0, data = multivariate_ts)
+
+
 
 
 ## 4.4. First differences and Stationarity -------------------------------------
@@ -159,7 +166,7 @@ plot(resid(fit), type="o", main="detrended")
 plot(diff(electric_ts), type="o", main="first difference")
 par(mfrow=c(3,1)) # plot ACFs
 acf(electric_ts, 48, main="BEVs")
-acf(resid(fit), 48, main="Detrended")
+?acf(resid(fit), 48, main="Detrended")
 acf(diff(electric_ts), 48, main="First difference")
 
 # Save detrended and first difference plots
@@ -180,9 +187,17 @@ dev.off() # Close the graphics device
 
 # GG fortifty
 
-fit_2 <- stl(electric_ts, s.window = "periodic")
+fit_2 <- decompose(electric_ts, s.window = "periodic")
 autoplot(fit_2)
 
+electric_ts %>% decompose(type="multiplicative") %>% 
+  autoplot() + 
+  xlab("Year") + 
+  ggtitle("Classical multiplicative decomposition of Brazil's BEV stock")
+
+fit_3 <- electric_ts %>% seas(x11="") 
+autoplot(fit_3) +
+  ggtitle("X11 decomposition of Brazil's BEV stock")
 
 
 ## 4.4. Forecasting ------------------------------------------------------------
@@ -194,6 +209,6 @@ autoplot(multivariate_ts[,'log_electric'], series="Data") +
 
 
 h = 90
-fcast <- forecast(ts_model_exp, h=h)
+fcast <- forecast(ts_model_3, h=h)
 
 autoplot(fcast)

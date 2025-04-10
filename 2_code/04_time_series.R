@@ -148,7 +148,26 @@ summary(ts_model_3)
 ts_model_exp <- tslm(electric ~ trend, lambda = 0, data = multivariate_ts)
 
 
+plot_correlation <- multivariate_ts %>%
+  as.data.frame() %>%
+  select(log_electric:log_avg_taxable_income_100) %>% 
+  rename(
+      `BEV Stock`  = log_electric, 
+      Population   = log_population, 
+      `BEV prices` = log_min_ev,
+      `ICEV (Gasol.) prices` = log_mean_gas,
+      `ICEV (Hybrid) prices` = log_mean_hyb,
+      `Income (50th)` = log_avg_taxable_income_50,
+      `Income (100th)`= log_avg_taxable_income_100
+  ) %>% 
+  GGally::ggpairs()
 
+ggsave(
+  filename = "./4_plots/correlation_plot.png",
+  plot     = plot_correlation,
+  width    = 10,
+  height   = 6)
+  
 
 ## 4.4. First differences and Stationarity -------------------------------------
 
@@ -206,6 +225,10 @@ autoplot(multivariate_ts[,'log_electric'], series="Data") +
   autolayer(fitted(ts_model_3), series="Fitted") +
   xlab("Year/Month") + ylab("BEV Stock (log transformed)") +
   guides(colour=guide_legend(title=" "))
+
+?fitted
+
+
 
 
 h = 90

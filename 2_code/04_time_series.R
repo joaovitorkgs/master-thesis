@@ -115,6 +115,8 @@ multivariate_ts <- ts(
 
 ## 4.2. Models -----------------------------------------------------------------
 
+### Linear Models
+
 ts_model_1 <- tslm(log_electric ~ 
                      log_population * 
                      date,
@@ -139,14 +141,33 @@ ts_model_3 <- tslm(log_electric ~
                      log_avg_taxable_income_100,
                    data = multivariate_ts)
 
-checkresiduals(ts_model_3)
-
-
 options(scipen = 999)
 summary(ts_model_3)
 
+### Comparing linear and non-linear models
+h <-  90
+t <- time(multivariate_ts)
+
+t.break1 <- 2013
+t.break2 <- 2022
+tb1 <- ts(pmax(0, t - t.break1), start = 2013)
+tb2 <- ts(pmax(0, t - t.break2), start = 2022)
+
+#### Linear
+ts_model_lin <- tslm(electric ~ trend, data = multivariate_ts)
+fcasts.lin <- forecast(ts_model_lin, h = h)
+
+#### Exponential
 ts_model_exp <- tslm(electric ~ trend, lambda = 0, data = multivariate_ts)
 
+### Cubic Spline
+
+ts_model_spline <- tslm(electric ~ t + I(t^2) + I(t^3), data = multivariate_ts)
+fcasts.spl <- forecast(ts_model_spline)
+
+### Goodness of Fit tests ------------------------------------------------------
+
+#### Correlation Matrix
 
 plot_correlation <- multivariate_ts %>%
   as.data.frame() %>%
@@ -169,7 +190,7 @@ ggsave(
   height   = 6)
   
 
-## 4.4. First differences and Stationarity -------------------------------------
+#### First differences and Stationarity
 
 # Schumway and Stoffer (pp. 56-59)
 
@@ -204,9 +225,9 @@ acf(diff(electric_ts), lag.max = 48, main = "First Difference")
 dev.off() # Close the graphics device
 
 
-# GG fortifty
+#### Classical and X11 decomposition of time series
 
-fit_2 <- decompose(electric_ts, s.window = "periodic")
+fit_2 <- decompose(electric_ts)
 autoplot(fit_2)
 
 electric_ts %>% decompose(type="multiplicative") %>% 
@@ -214,9 +235,22 @@ electric_ts %>% decompose(type="multiplicative") %>%
   xlab("Year") + 
   ggtitle("Classical multiplicative decomposition of Brazil's BEV stock")
 
+# This is the one I ended up using
+
 fit_3 <- electric_ts %>% seas(x11="") 
 autoplot(fit_3) +
   ggtitle("X11 decomposition of Brazil's BEV stock")
+
+
+### Histogram of residuals
+
+checkresiduals(ts_model_3)
+png("./4_plots/residuals_plot.png", width = 1000, height = 800)
+dev.off() # Close the graphics device
+
+### Selecting predictors
+
+CV(ts_model_1)
 
 
 ## 4.4. Forecasting ------------------------------------------------------------
@@ -224,14 +258,18 @@ autoplot(fit_3) +
 autoplot(multivariate_ts[,'log_electric'], series="Data") +
   autolayer(fitted(ts_model_3), series="Fitted") +
   xlab("Year/Month") + ylab("BEV Stock (log transformed)") +
-  guides(colour=guide_legend(title=" "))
+  guides(colour=guide_legend(title=" ")
 
-?fitted
-
-
+ts_model_3
 
 
-h = 90
+h  <-  120
 fcast <- forecast(ts_model_3, h=h)
 
 autoplot(fcast)
+
+
+ts_model_lin%>% 
+  stlf(method="naive") %>%
+  autoplot()
+

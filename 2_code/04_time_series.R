@@ -217,7 +217,7 @@ single_ts <- fleet_df_ts %>%
 
 electric_ts <- ts(single_ts$electric, start = c(2013, 5), frequency = 12)
 
-fit <- lm(electric_ts ~time(electric_ts), na.action=NULL) # regress chicken on time 
+fit <- lm(electric_ts ~time(electric_ts), na.action=NULL) # regress BEVs on time 
 par(mfrow=c(2,1))
 plot(resid(fit), type="o", main="detrended")
 plot(diff(electric_ts), type="o", main="first difference")
@@ -270,67 +270,7 @@ dev.off() # Close the graphics device
 CV(ts_model_1)
 
 
-
-
 ## 4.4. Forecasting ------------------------------------------------------------
-
-### Linear regression model ----------------------------------------------------
-
-h  <-  90
-
-# Create future date sequence
-last_date <- max(fleet_df_ts$date)
-future_dates <- seq(last_date %m+% months(1), by = "month", length.out = 90)
-
-# Initialize empty data frame
-future_data <- data.frame(date = future_dates)
-
-# Forecast each predictor using trend models
-predictors <- c('log_population', 'log_min_ev', 'log_mean_gas', 
-                'log_mean_hyb', 'log_avg_taxable_income_50', 
-                'log_avg_taxable_income_100')
-
-for(var in predictors) {
-  trend_model <- tslm(as.formula(paste(var, "~ trend")), 
-                      data = multivariate_ts_2)
-  future_data[[var]] <- forecast(trend_model, h = 90)$mean
-}
-
-# Add trend component for interaction term
-future_data$trend <- seq_len(nrow(future_data)) + 
-  nrow(window(multivariate_ts, start=c(start_year,start_month)))
-
-future_ts <- ts(future_data,
-                start = c(year(last_date), month(last_date)),
-                frequency = 12)
-
-required_vars <- all.vars(formula(ts_model_3))
-print(setdiff(required_vars, names(future_data)))
-
-# Convert ts object to proper data frame
-future_data <- as.data.frame(future_ts) %>% 
-  setNames(colnames(multivariate_ts_2)) %>%  # Preserve original names
-  select(all_of(required_vars)) %>%  # Explicit column selection
-  mutate(across(everything(), as.numeric))  # Force numeric types
-
-# Ensure numeric type conversion
-future_data <- future_data %>% 
-  mutate(across(everything(), as.numeric))
-
-# Forecast with explicit newdata specification
-fcast <- forecast(ts_model_3, newdata = future_data)
-
-
-fleet_tsibble <- fleet_df_ts_log %>%
-  as_tsibble(index = date)
-
-# 2. Plot using autoplot
-fleet_tsibble %>% 
-  select(log_electric) %>% 
-  autoplot()
-
-autoplot(fcast)
-
 
 ### Exp model ------------------------------------------------------------------
 
@@ -354,45 +294,125 @@ ggplot(time_df, aes(x = date)) +
 
 
 
-
-
-
-
-
 # 5. ARIMA ---------------------------------------------------------------------
+
 ## 5.1. Unit root tests --------------------------------------------------------
 
 electric_ts %>% diff(lag=12) %>% ur.kpss() %>% summary()
 
-# The result of these diagnostics show a non-stationary time series
+# The result of these diagnostics indicate a non-stationary time series
+
+## Different ARIMA combinations
+
+autoplot(electric_ts) + 
+  ggtitle("Time Series Plot of Electric Data") +
+  xlab("Time") + ylab("Value")
+
+# Seasonal decomposition
+dec <- decompose(electric_ts)
+autoplot(dec)
+
+# Check stationarity
+adf.test(electric_ts)  # Augmented Dickey-Fuller test
+
+# ACF and PACF plots
+ggAcf(electric_ts)
+ggPacf(electric_ts)
+
+# If non-stationary, check differenced series
+ggAcf(diff(electric_ts))
+ggPacf(diff(electric_ts))
+
+# Automatic ARIMA model selection
+auto_fit <- auto.arima(electric_ts, seasonal=TRUE, stepwise=FALSE, approximation=FALSE)
+summary(auto_fit)
+
+# Generate a grid of potential ARIMA models
+models <- list()
+orders <- expand.grid(p=0:2, d=0:2, q=0:2, P=0:1, D=0:1, Q=0:1)
+
+# Function to safely fit ARIMA models
+safe_arima <- function(p, d, q, P, D, Q, data) {
+  model_name <- paste0("ARIMA(", p, ",", d, ",", q, ")(", P, ",", D, ",", Q, ")_12")
+  tryCatch({
+    model <- Arima(data, order=c(p, d, q), seasonal=list(order=c(P, D, Q), period=12))
+    return(data.frame(
+      model = model_name,
+      AIC = model$aic,
+      BIC = model$bic,
+      AICc = model$aicc,
+      RMSE = sqrt(mean(model$residuals^2)),
+      stringsAsFactors = FALSE
+    ))
+  }, error = function(e) {
+    return(data.frame(
+      model = model_name,
+      AIC = NA,
+      BIC = NA,
+      AICc = NA,
+      RMSE = NA,
+      stringsAsFactors = FALSE
+    ))
+  })
+}
+
+# Fit models and collect results
+results <- list()
+for(i in 1:nrow(orders)) {
+  results[[i]] <- safe_arima(
+    orders$p[i], orders$d[i], orders$q[i],
+    orders$P[i], orders$D[i], orders$Q[i],
+    electric_ts
+  )
+}
+
+# Combine results
+all_models <- do.call(rbind, results)
+
+# Sort by AIC
+all_models_sorted <- all_models %>% 
+  arrange(AIC) %>%
+  filter(!is.na(AIC))
+
+# Display top 10 models
+head(all_models_sorted, 10)
 
 
-## 5.2. Seasonal ARIMA models --------------------------------------------------
+# Export results to CSV
+write.table(all_models_sorted,
+            file = "./6_tables/arima_models_comparison.csv", 
+            sep = ";",
+            row.names = FALSE,
+            col.names = TRUE)
 
-electric_ts %>% diff() %>% ggtsdisplay()
+
+
+## 5.2. Forecasting ------------------------------------------------------------
+
+### Diagnostic plots
 
 electric_ts %>% 
-  Arima(order=c(0,1,1), seasonal=c(0,1,1)) %>%
+  Arima(order=c(1,2,1), seasonal=c(1,1,0)) %>%
   residuals() %>% ggtsdisplay()
 
-fit_arima <- Arima(electric_ts, order=c(0,1,3), seasonal=c(0,1,1))
+### Forecasting model
 
+fit_arima <- Arima(electric_ts, order=c(1,2,1), seasonal=c(1,1,0))
 
+### Ploting forecasts
 
-## 5.3. Forecasting ------------------------------------------------------------
-
-fit_arima %>% forecast(h=120) %>%
+plot_ARIMA <- fit_arima %>% forecast(h=90) %>%
   autoplot() +
-  ylab("BEV Stock in Brazil") + xlab("Year")
+  ggtitle("Forecasting of BEV stock in Brazil: ARIMA model") +
+  ylab("BEV Stock in Brazil") + xlab("Year")+
+  scale_y_continuous(labels = scales::comma)+
+  theme_bw()
 
-auto.arima(electric_ts)
+plot_ARIMA %>% 
+  ggsave(filename = "./4_plots/plot_ARIMA.png", 
+         width = 8, height = 5)
 
 forecast(fit_arima)
-
-
-
-
-
 
 
 ## Goodness-of-fit measures

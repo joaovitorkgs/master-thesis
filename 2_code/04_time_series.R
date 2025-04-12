@@ -93,11 +93,33 @@ fleet_df_ts <- fleet_df_c %>%
     log_mean_hyb               = log(mean_hyb),
     log_avg_taxable_income_50  = log(avg_taxable_income_50),
     log_avg_taxable_income_100 = log(avg_taxable_income_100)
-  ) %>% 
+  ) %>%  
   mutate(
     electric   = if_else(date == as.Date("2018-06-01"), electric   / 2, electric),
     population = if_else(date == as.Date("2018-06-01"), population / 2, population)
   )
+
+fleet_df_ts_log <- fleet_df_c %>% 
+  ungroup() %>% 
+  select(sigla_uf, date, year, month, electric, population, min_ev, mean_gas, mean_hyb, avg_taxable_income_50, avg_taxable_income_100) %>% 
+  group_by(date) %>% 
+  summarize(
+    electric                = sum(electric),
+    population              = sum(population),
+    min_ev                  = mean(min_ev),
+    mean_gas                = mean(mean_gas),
+    mean_hyb                = mean(mean_hyb),
+    avg_taxable_income_50   = mean(avg_taxable_income_50),
+    avg_taxable_income_100  = mean(avg_taxable_income_100),
+    log_electric               = log(electric),
+    log_population             = log(population),
+    log_min_ev                 = log(min_ev),
+    log_mean_gas               = log(mean_gas),
+    log_mean_hyb               = log(mean_hyb),
+    log_avg_taxable_income_50  = log(avg_taxable_income_50),
+    log_avg_taxable_income_100 = log(avg_taxable_income_100)
+  ) %>% 
+  select(date,log_electric:log_avg_taxable_income_100) 
 
 fleet_df_ts <- fleet_df_ts %>% arrange(date)
 
@@ -113,19 +135,25 @@ multivariate_ts <- ts(
   frequency = 12
 )
 
+multivariate_ts_2 <- ts(
+  fleet_df_ts_log,
+  start = c(start_year, start_month),
+  frequency = 12
+)
+
+
+
 ## 4.2. Models -----------------------------------------------------------------
 
 ### Linear Models
 
 ts_model_1 <- tslm(log_electric ~ 
-                     log_population * 
-                     date,
+                     log_population, 
                    data = multivariate_ts)
 
 
 ts_model_2 <- tslm(log_electric ~ 
                      log_population * 
-                     date + 
                      log_min_ev + 
                      log_mean_gas + 
                      log_mean_hyb,
@@ -133,7 +161,6 @@ ts_model_2 <- tslm(log_electric ~
 
 ts_model_3 <- tslm(log_electric ~ 
                      log_population * 
-                     date + 
                      log_min_ev + 
                      log_mean_gas + 
                      log_mean_hyb +
@@ -148,11 +175,6 @@ summary(ts_model_3)
 h <-  90
 t <- time(multivariate_ts)
 
-t.break1 <- 2013
-t.break2 <- 2022
-tb1 <- ts(pmax(0, t - t.break1), start = 2013)
-tb2 <- ts(pmax(0, t - t.break2), start = 2022)
-
 #### Linear
 ts_model_lin <- tslm(electric ~ trend, data = multivariate_ts)
 fcasts.lin <- forecast(ts_model_lin, h = h)
@@ -160,10 +182,6 @@ fcasts.lin <- forecast(ts_model_lin, h = h)
 #### Exponential
 ts_model_exp <- tslm(electric ~ trend, lambda = 0, data = multivariate_ts)
 
-### Cubic Spline
-
-ts_model_spline <- tslm(electric ~ t + I(t^2) + I(t^3), data = multivariate_ts)
-fcasts.spl <- forecast(ts_model_spline)
 
 ### Goodness of Fit tests ------------------------------------------------------
 
@@ -195,8 +213,7 @@ ggsave(
 # Schumway and Stoffer (pp. 56-59)
 
 single_ts <- fleet_df_ts %>% 
-  select(date, electric)
-  ts(start = c(start_year, start_month),frequency = 12)
+  select(date, electric) 
 
 electric_ts <- ts(single_ts$electric, start = c(2013, 5), frequency = 12)
 
@@ -227,6 +244,7 @@ dev.off() # Close the graphics device
 
 #### Classical and X11 decomposition of time series
 
+# Classical
 fit_2 <- decompose(electric_ts)
 autoplot(fit_2)
 
@@ -235,8 +253,7 @@ electric_ts %>% decompose(type="multiplicative") %>%
   xlab("Year") + 
   ggtitle("Classical multiplicative decomposition of Brazil's BEV stock")
 
-# This is the one I ended up using
-
+# X11 
 fit_3 <- electric_ts %>% seas(x11="") 
 autoplot(fit_3) +
   ggtitle("X11 decomposition of Brazil's BEV stock")
@@ -253,23 +270,132 @@ dev.off() # Close the graphics device
 CV(ts_model_1)
 
 
+
+
 ## 4.4. Forecasting ------------------------------------------------------------
 
-autoplot(multivariate_ts[,'log_electric'], series="Data") +
-  autolayer(fitted(ts_model_3), series="Fitted") +
-  xlab("Year/Month") + ylab("BEV Stock (log transformed)") +
-  guides(colour=guide_legend(title=" ")
+### Linear regression model ----------------------------------------------------
 
-ts_model_3
+h  <-  90
+
+# Create future date sequence
+last_date <- max(fleet_df_ts$date)
+future_dates <- seq(last_date %m+% months(1), by = "month", length.out = 90)
+
+# Initialize empty data frame
+future_data <- data.frame(date = future_dates)
+
+# Forecast each predictor using trend models
+predictors <- c('log_population', 'log_min_ev', 'log_mean_gas', 
+                'log_mean_hyb', 'log_avg_taxable_income_50', 
+                'log_avg_taxable_income_100')
+
+for(var in predictors) {
+  trend_model <- tslm(as.formula(paste(var, "~ trend")), 
+                      data = multivariate_ts_2)
+  future_data[[var]] <- forecast(trend_model, h = 90)$mean
+}
+
+# Add trend component for interaction term
+future_data$trend <- seq_len(nrow(future_data)) + 
+  nrow(window(multivariate_ts, start=c(start_year,start_month)))
+
+future_ts <- ts(future_data,
+                start = c(year(last_date), month(last_date)),
+                frequency = 12)
+
+required_vars <- all.vars(formula(ts_model_3))
+print(setdiff(required_vars, names(future_data)))
+
+# Convert ts object to proper data frame
+future_data <- as.data.frame(future_ts) %>% 
+  setNames(colnames(multivariate_ts_2)) %>%  # Preserve original names
+  select(all_of(required_vars)) %>%  # Explicit column selection
+  mutate(across(everything(), as.numeric))  # Force numeric types
+
+# Ensure numeric type conversion
+future_data <- future_data %>% 
+  mutate(across(everything(), as.numeric))
+
+# Forecast with explicit newdata specification
+fcast <- forecast(ts_model_3, newdata = future_data)
 
 
-h  <-  120
-fcast <- forecast(ts_model_3, h=h)
+fleet_tsibble <- fleet_df_ts_log %>%
+  as_tsibble(index = date)
+
+# 2. Plot using autoplot
+fleet_tsibble %>% 
+  select(log_electric) %>% 
+  autoplot()
 
 autoplot(fcast)
 
 
-ts_model_lin%>% 
-  stlf(method="naive") %>%
-  autoplot()
+### Exp model ------------------------------------------------------------------
 
+fcast_exp <- forecast(ts_model_exp, h=h)
+autoplot(fcast_exp)
+
+### Goodness of fit (exp model) ------------------------------------------------
+
+time_df <- data.frame(
+  date = as.Date(time(multivariate_ts)),
+  data = multivariate_ts[,'log_electric'],
+  fitted = fitted(ts_model_3)
+)
+
+ggplot(time_df, aes(x = date)) +
+  geom_line(aes(y = data, color = "Data")) +
+  geom_line(aes(y = fitted, color = "Fitted")) +
+  xlab("Year/Month") + 
+  ylab("BEV Stock (log transformed)") +
+  guides(colour = guide_legend(title = " "))
+
+
+
+
+
+
+
+
+# 5. ARIMA ---------------------------------------------------------------------
+## 5.1. Unit root tests --------------------------------------------------------
+
+electric_ts %>% diff(lag=12) %>% ur.kpss() %>% summary()
+
+# The result of these diagnostics show a non-stationary time series
+
+
+## 5.2. Seasonal ARIMA models --------------------------------------------------
+
+electric_ts %>% diff() %>% ggtsdisplay()
+
+electric_ts %>% 
+  Arima(order=c(0,1,1), seasonal=c(0,1,1)) %>%
+  residuals() %>% ggtsdisplay()
+
+fit_arima <- Arima(electric_ts, order=c(0,1,3), seasonal=c(0,1,1))
+
+
+
+## 5.3. Forecasting ------------------------------------------------------------
+
+fit_arima %>% forecast(h=120) %>%
+  autoplot() +
+  ylab("BEV Stock in Brazil") + xlab("Year")
+
+auto.arima(electric_ts)
+
+forecast(fit_arima)
+
+
+
+
+
+
+
+## Goodness-of-fit measures
+
+accuracy(fit_arima)
+accuracy(ts_model_3)

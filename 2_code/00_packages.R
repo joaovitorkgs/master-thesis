@@ -56,7 +56,10 @@ pacman::p_load(
   astsa,
   xts,
   ggfortify,
-  seasonal
+  seasonal,
+  urca,
+  fable,
+  tsibble
 )
 
 

@@ -4,7 +4,6 @@ source("./2_code/00_packages.R")
 
 # 2. Loading data sets ---------------------------------------------------------
 
-
 fleet_2013_2024_clean <- read_csv("./3_processed_data/fleet_2013_2024_id_clean.csv")
 price_df              <- read_csv("./3_processed_data/fipe_price_monthly_trends_deflated.csv")
 income_data_wide_uf   <- read_csv("./3_processed_data/income_data_wide_uf.csv")

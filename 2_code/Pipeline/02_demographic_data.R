@@ -35,6 +35,30 @@ if (!file.exists("./1_raw_data/0_demographics/ibge_pop_raw_df.csv")) {
 
 fleet_2013_2024 <- read_csv("./1_raw_data/2_vehicle_fleet/frota_2013_2024.csv")
 
+## Keeping a record of how many undefined registered vehicles were in the data
+
+unique(fleet_2013_2024$UF)
+missing_data <- c(
+  "Sem InformaÃ§Ã£o",
+  "Nao Identificado",
+  "Nao se Aplica",
+  "Sem Informacao",
+  "Sem Combustível",
+  "UF",
+  "Não Identificado",
+  "Não se Aplica",
+  "NÃ£o Identificado",
+  "NÃ£o se Aplica")
+
+BEV_missing_data <- fleet_2013_2024 %>% 
+  filter(UF %in% missing_data) 
+
+BEV_missing_data %>% 
+  filter(fuel == "ELETRICO/FONTE INTERNA") %>% 
+  group_by() %>% 
+  summarize(BEV = sum(total)) 
+
+
 ## 3. Cleaning city data and adding ids ----------------------------------------
 
 ### 3.1. Separating cities by state --------------------------------------------

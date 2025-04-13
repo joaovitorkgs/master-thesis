@@ -20,7 +20,7 @@ unique(imported_data$fuel)
 
 df_fleet_city <- imported_data %>%
   mutate(
-    fuel_category = case_when(
+    fuel = case_when(
       # Prioritize hybrid categories first
       str_detect(fuel, regex("HIBRIDO PLUG-IN|HIBRIDO", ignore_case = TRUE)) ~ "PHEV",
       
@@ -47,16 +47,26 @@ df_fleet_city <- imported_data %>%
         !str_detect(fuel, regex("ELETRICO", ignore_case = TRUE)) ~ "Gas",
       
       # Catch-all for uncategorized entries
-      TRUE ~ "other"
+      TRUE ~ "Other"
     )
   ) %>%
-  group_by(sigla_uf, id_municipio_nome, month, year, date, fuel_category) %>%
-  summarise(total = sum(total, na.rm = TRUE), .groups = "drop") %>% # Use `.groups = "drop"` for clarity
+  group_by(sigla_uf, id_municipio_nome, month, year, date, populacao, fuel) %>%  # Add fuel here
+  summarise(
+    total      = sum(total, na.rm = TRUE),
+    .groups = "drop") %>%
   pivot_wider(
-    names_from = fuel_category,
+    names_from = fuel,
     values_from = total,
-    values_fill = list(total = 0) # Explicitly set `values_fill` to avoid ambiguity
-  )
+    values_fill = list(total = 0)
+  ) %>% 
+  mutate(across(
+    Diesel:PHEV, 
+    ~ case_when(
+      date == "2014-01-01" ~ round(.x / 2, digits = 0),
+      date == "2024-02-01" ~ round(.x / 10, digits = 0),
+      TRUE ~ .x
+    )
+  ))
 
 
 if (!file.exists(  "./3_processed_data/df_fleet_city.csv")) {
@@ -70,7 +80,7 @@ if (!file.exists(  "./3_processed_data/df_fleet_city.csv")) {
 
 df_fleet_state <- imported_data %>%
   mutate(
-    fuel_category = case_when(
+    fuel = case_when(
       # Prioritize hybrid categories first
       str_detect(fuel, regex("HIBRIDO PLUG-IN|HIBRIDO", ignore_case = TRUE)) ~ "PHEV",
       
@@ -97,16 +107,39 @@ df_fleet_state <- imported_data %>%
         !str_detect(fuel, regex("ELETRICO", ignore_case = TRUE)) ~ "Gas",
       
       # Catch-all for uncategorized entries
-      TRUE ~ "other"
+      TRUE ~ "Other"
     )
   ) %>%
-  group_by(sigla_uf, month, year, date, fuel_category) %>%
-  summarise(total = sum(total, na.rm = TRUE), .groups = "drop") %>% # Use `.groups = "drop"` for clarity
+  group_by(sigla_uf, month, year, date, populacao, fuel) %>%
+  summarise(
+    total      = sum(total, na.rm = TRUE),
+    .groups = "drop") %>%
   pivot_wider(
-    names_from = fuel_category,
+    names_from = fuel,
     values_from = total,
-    values_fill = list(total = 0) # Explicitly set `values_fill` to avoid ambiguity
-  )
+    values_fill = list(total = 0)
+  ) %>% 
+  group_by(sigla_uf, month, year, date) %>%  
+  summarize(
+    populacao = sum(populacao),
+    Diesel    = sum(Diesel),
+    Ethanol   = sum(Ethanol),
+    Gasoline  = sum(Gasoline),
+    Gas       = sum(Gas),
+    Other     = sum(Other),
+    BEV       = sum(BEV),
+    PHEV      = sum(PHEV),
+    .groups = "drop") %>% 
+  mutate(across(
+    Diesel:PHEV, 
+    ~ case_when(
+      date == "2014-01-01" ~ round(.x / 2, digits = 0),
+      date == "2024-02-01" ~ round(.x / 10, digits = 0),
+      TRUE ~ .x
+    )
+  )) %>% 
+  drop_na()
+  
 
 if (!file.exists(  "./3_processed_data/df_fleet_state.csv")) {
   write_csv(df_fleet_state,
@@ -121,7 +154,7 @@ unique(imported_data$fuel)
 
 df_fleet_brazil <- imported_data %>%
   mutate(
-    fuel_category = case_when(
+    fuel = case_when(
       # Prioritize hybrid categories first
       str_detect(fuel, regex("HIBRIDO PLUG-IN|HIBRIDO", ignore_case = TRUE)) ~ "PHEV",
       
@@ -148,24 +181,37 @@ df_fleet_brazil <- imported_data %>%
         !str_detect(fuel, regex("ELETRICO", ignore_case = TRUE)) ~ "Gas",
       
       # Catch-all for uncategorized entries
-      TRUE ~ "other"
+      TRUE ~ "Other"
     )
   ) %>%
-  group_by(month, year, date, fuel_category) %>%
-  summarise(total = sum(total, na.rm = TRUE), .groups = "drop") %>% # Use `.groups = "drop"` for clarity
+  group_by(month, year, date, populacao, fuel) %>%
+  summarise(
+    total   = sum(total),
+    .groups = "drop") %>%
   pivot_wider(
-    names_from = fuel_category,
+    names_from = fuel,
     values_from = total,
-    values_fill = list(total = 0) # Explicitly set `values_fill` to avoid ambiguity
+    values_fill = list(total = 0)
   ) %>% 
+  group_by(month, year, date) %>%  
+  summarize(
+    Diesel    = sum(Diesel),
+    Ethanol   = sum(Ethanol),
+    Gasoline  = sum(Gasoline),
+    Gas       = sum(Gas),
+    Other     = sum(Other),
+    BEV       = sum(BEV),
+    PHEV      = sum(PHEV),
+    .groups = "drop") %>% 
   mutate(across(
-    BEV:other, # Apply the transformation only to columns from PHEV to other
+    Diesel:PHEV, 
     ~ case_when(
-      date == "2014-01-01" ~ .x / 2,
-      date == "2024-02-01" ~ .x / 10,
+      date == "2014-01-01" ~ round(.x / 2, digits = 0),
+      date == "2024-02-01" ~ round(.x / 10, digits = 0),
       TRUE ~ .x
     )
-  ))
+  )) %>% 
+  drop_na()
 
 
 if (!file.exists(  "./3_processed_data/df_fleet_brazil.csv")) {
@@ -174,73 +220,3 @@ if (!file.exists(  "./3_processed_data/df_fleet_brazil.csv")) {
 } else {
   print("File already exists in the repository")
 }
-
-
-### Visualizing the data --------------------------------------------------------
-
-# Reshape the data for ggplot
-df_long <- df_fleet_brazil %>%
-  pivot_longer(cols = c(BEV, Diesel, Gasoline, Ethanol, PHEV), names_to = "fuel_type", values_to = "total")
-
-# Plotting
-ggplot(df_long, aes(x = date, y = total, color = fuel_type)) +
-  geom_line(size = 1) +
-  scale_y_continuous(
-    trans = "log10",  # Log-transform the Y-axis
-    labels = label_comma()  # Show non-scientific notation values
-  ) +
-  labs(
-    title = "Evolution of Vehicles per Fuel Type (Log Scale)",
-    x = "Date",
-    y = "Total Vehicles (Log Scale)",
-    color = "Fuel Type"
-  ) +
-  theme_minimal(base_size = 14) +
-  theme(
-    legend.position = "right",
-    plot.title = element_text(hjust = 0.5)
-  )
-
-
-# Plotting
-df_long %>% 
-  filter(fuel_type == "BEV") %>% 
-  ggplot(aes(x = date, y = total, color = fuel_type)) +
-  geom_line(size = 1) +
-  scale_y_continuous(
-    trans = "log10",  # Log-transform the Y-axis
-    labels = label_comma()  # Show non-scientific notation values
-  ) +
-  labs(
-    title = "Evolution of Vehicles per Fuel Type (Log Scale)",
-    x = "Date",
-    y = "Total Vehicles (Log Scale)",
-    color = "Fuel Type"
-  ) +
-  theme_minimal(base_size = 14) +
-  theme(
-    legend.position = "right",
-    plot.title = element_text(hjust = 0.5)
-  )
-
-df_long %>% 
-  filter(fuel_type == "PHEV") %>% 
-  ggplot(aes(x = date, y = total, color = fuel_type)) +
-  geom_line(size = 1) +
-  scale_y_continuous(
-    trans = "log10",  # Log-transform the Y-axis
-    labels = label_comma()  # Show non-scientific notation values
-  ) +
-  labs(
-    title = "Evolution of Vehicles per Fuel Type (Log Scale)",
-    x = "Date",
-    y = "Total Vehicles (Log Scale)",
-    color = "Fuel Type"
-  ) +
-  theme_minimal(base_size = 14) +
-  theme(
-    legend.position = "right",
-    plot.title = element_text(hjust = 0.5)
-  )
-
-

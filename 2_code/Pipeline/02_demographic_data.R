@@ -33,7 +33,7 @@ if (!file.exists("./1_raw_data/0_demographics/ibge_pop_raw_df.csv")) {
 
 ## 2.2. Data from project pipeline ---------------------------------------------
 
-fleet_2013_2024_clean <- read_csv("./3_processed_data/fleet_2013_2024_clean_2")
+fleet_2013_2024 <- read_csv("./1_raw_data/2_vehicle_fleet/frota_2013_2024.csv")
 
 ## 3. Cleaning city data and adding ids ----------------------------------------
 
@@ -41,7 +41,7 @@ fleet_2013_2024_clean <- read_csv("./3_processed_data/fleet_2013_2024_clean_2")
 
 #### 3.1.1 DENATRAM city data --------------------------------------------------
 
-fleet_df_cities <- fleet_2013_2024_clean %>% 
+fleet_df_cities <- fleet_2013_2024 %>% 
   group_by(UF) %>% 
   distinct(city)
 
@@ -107,51 +107,3 @@ if (!file.exists(  "./3_processed_data/fleet_2013_2024_id.csv")) {
   print("File already exists in the repository")
 }
 
-
-## THERE IS A STEP MISSING HERE
-
-
-
-
-
-
-fleet_2013_2024_clean_id <- fleet_2013_2024_clean %>% 
-  mutate(key = paste(UF,city, sep = "_")) %>% 
-  left_join(ibge_df_cities_key, by = "key") %>% 
-  left_join(ibge_pop_raw_df, by = c("year" = "year", "id_municipio" = "id_municipio")) %>% 
-  select(sigla_uf, sigla_uf_nome, id_municipio, id_municipio_nome, diesel, ethanol, gasoline, other, electric, gas, month, year, date, populacao) %>% 
-  drop_na()
-
-if (!file.exists(  "./3_processed_data/fleet_2013_2024_id_clean.csv")) {
-  write_csv(fleet_2013_2024_clean_id,
-            file = "./3_processed_data/fleet_2013_2024_id_clean.csv")
-} else {
-  print("File already exists in the repository")
-}
-
-## 4. Exploring the data -------------------------------------------------------
-
-# Correlation between population and electric vehicles
-
-fleet_2022_ev <- fleet_2013_2024_clean_id %>% 
-  mutate(ev_per_capita = electric/populacao) %>% 
-  filter(year == 2022) %>% 
-  group_by(year, id_municipio) %>% 
-  summarize(ev_per_capita = mean(ev_per_capita),
-            population    = mean(populacao))
-
-ggplot(fleet_2022_ev, aes(x=log(ev_per_capita), y=log(population))) + 
-  geom_point()
-
-
-# Correlation between population and number of vehicles
-
-fleet_2022_all <- fleet_2013_2024_clean_id %>% 
-  mutate(cars_per_capita = (diesel+ethanol+gasoline+other+electric)/populacao) %>% 
-  filter(year == 2022) %>% 
-  group_by(year, id_municipio) %>% 
-  summarize(cars_per_capita = mean(cars_per_capita),
-            population    = mean(populacao))
-
-ggplot(fleet_2022_all, aes(x=cars_per_capita, y=log(population))) + 
-  geom_point()

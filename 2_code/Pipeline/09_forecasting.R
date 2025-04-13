@@ -75,6 +75,8 @@ h <-  (5 * 12)
 fcast_exp <- forecast(ts_model_exp, h=h)
 autoplot(fcast_exp)
 
+
+
 ### Goodness of fit (exp model) ------------------------------------------------
 
 # time_df <- data.frame(
@@ -187,12 +189,20 @@ write.table(all_models_sorted,
 ### Diagnostic plots
 
 univariate_ts %>% 
-  Arima(order=c(0,1,1), seasonal=c(0,1,1)) %>%
+  Arima(order=c(2,1,0), seasonal=c(0,1,0)) %>%
   residuals() %>% ggtsdisplay()
+
+# changing the first parameter to 1 yields a better visualisation of the residuals,
+# but it also increases the confidence margin a lot. why?
 
 ### Forecasting model
 
-fit_arima <- Arima(univariate_ts, order=c(0,1,1), seasonal=c(0,1,1))
+fit_arima <- Arima(univariate_ts, order=c(0,1,0), seasonal=c(0,1,0))
+
+# Using 2020-2025 data:
+# The plot without decreasing projections uses (0,1,0)(0,1,0) as parameters, but
+# It performs poorly with the metrics used. A trade off would be a (1,1,0)(0,1,1),
+# which performs well, but projects negative data.
 
 ### Ploting forecasts
 

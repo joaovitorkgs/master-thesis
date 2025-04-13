@@ -58,8 +58,8 @@ if (!file.exists(  "./3_processed_data/df_combined_state.csv")) {
 
 ## Data for the univariate time series -----------------------------------------
 
-start_year <- as.numeric(format(min(df_fleet_brazil$date), "%Y"))
-start_month <- as.numeric(format(min(df_fleet_brazil$date), "%m"))
+start_year  <- 2020
+start_month <- 01
 
 
 df <-  df_fleet_state%>% 
@@ -101,10 +101,12 @@ fleet_df_ts <- df_combined_state %>%
 
 
 multivariate_ts <- df_fleet_brazil %>% 
+  filter(year > 2019) %>% 
   arrange(date) %>% 
   ts(start = c(start_year, start_month), frequency = 12)
 
 univariate_ts <- df_fleet_brazil %>% 
+  filter(year > 2019) %>% 
   arrange(date) %>% 
   select(BEV) %>% 
   ts(start = c(start_year, start_month), frequency = 12)

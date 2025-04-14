@@ -14,6 +14,7 @@ pacman::p_load(
   archive,      # Extract files from compressed archives (.zip, .tar.gz)
   
   # Data Visualization
+  grid,
   ggplot2,      # Create customizable visualizations with grammar of graphics
   scales,       # Format axes and legends (percentages, currencies)
   viridis,      # Colorblind-friendly color palettes
@@ -60,8 +61,7 @@ pacman::p_load(
   urca,
   fable,
   tsibble,
-  prophet,
-  kableExtra
+  prophet
 )
 
 print("The packages have been successfully loaded.")

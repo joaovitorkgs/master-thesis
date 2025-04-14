@@ -10,7 +10,7 @@ source("./2_code/Pipeline/07_combined_data.R")
 univariate_ts
 
 # Converting it back to a df for the prophet package
-start_date <- as.Date("2020-05-01") 
+start_date <- as.Date("2020-01-01") 
 end_date   <- length(univariate_ts)
 dates      <- seq.Date(from = start_date, by = "month", length.out = end_date)
 df         <- data.frame(ds = dates, y = as.vector(univariate_ts))
@@ -57,7 +57,7 @@ if (!file.exists("./4_plots/plot_fcast_Prophet.png")) {
 ### Performance metrics --------------------------------------------------------
 
 # Cross-validation
-df_cv <- cross_validation(model,
+df_cv <- cross_validation(fit_Prophet,
                           units    = "days",
                           horizon  = 180,
                           period   = 90,

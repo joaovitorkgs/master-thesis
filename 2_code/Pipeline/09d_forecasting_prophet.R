@@ -30,7 +30,7 @@ fcast_Prophet <- predict(fit_Prophet, df_2030)
 # Plotting results
 plot(fit_Prophet, fcast_Prophet)
 
-prophet_plot_components(model, predict_2030)
+prophet_plot_components(fit_Prophet, fcast_Prophet)
 
 
 ### Plotting forecasts ---------------------------------------------------------

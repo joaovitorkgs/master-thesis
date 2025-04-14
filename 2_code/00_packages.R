@@ -59,9 +59,10 @@ pacman::p_load(
   seasonal,
   urca,
   fable,
-  tsibble
+  tsibble,
+  prophet,
+  kableExtra
 )
-
 
 print("The packages have been successfully loaded.")
 

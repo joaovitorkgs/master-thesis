@@ -101,7 +101,16 @@ write.table(all_models_sorted,
 # It performs poorly with the metrics used. A trade off would be a (1,1,0)(0,1,1),
 # which performs well, but projects negative data.
 
-fit_ARIMA <- Arima(univariate_ts, order=c(0,1,0), seasonal=c(0,1,1))
+options(scipen=999)
+Arima(univariate_ts, order=c(0,1,0), seasonal=c(0,1,1), include.mean = FALSE) %>% 
+  forecast(h=60) %>% 
+  autoplot()
+
+
+
+fit_ARIMA <- Arima(univariate_ts, 
+                   order=c(0,1,0), seasonal=c(0,1,1),
+                   include.mean = FALSE)
 
 ### Diagnostic plots
 

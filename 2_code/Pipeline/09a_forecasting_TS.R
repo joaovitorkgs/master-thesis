@@ -2,63 +2,18 @@
 
 source("./2_code/Pipeline/07_combined_data.R")
 
-# 2. Assessing the time series -------------------------------------------------
+# 2. Decomposing time series ---------------------------------------------------
 
-## First differences and Stationarity ------------------------------------------
-
-# Schumway and Stoffer (pp. 56-59)
-
-fit <- lm(univariate_ts ~time(univariate_ts), na.action=NULL) # regress BEVs on time 
-par(mfrow=c(2,1))
-plot(resid(fit), type="o", main="detrended")
-plot(diff(univariate_ts), type="o", main="first difference")
-# Save detrended and first difference plots
-png("./4_plots/ts_detrended_and_first_difference_updated.png", width = 800, height = 600)
-
-par(mfrow=c(3,1)) # plot ACFs
-acf(univariate_ts, 48, main="BEVs")
-acf(resid(fit), 48, main="Detrended")
-acf(diff(univariate_ts), 48, main="First difference")
-# Save ACF plots
-png("./4_plots/ts_ACF_updated.png", width = 800, height = 600)
-
-par(mfrow = c(2, 1)) # Set up a 2x1 layout for plots
-plot(resid(fit), type = "o", main = "Detrended")
-plot(diff(univariate_ts), type = "o", main = "First Difference")
-# Save ACF plots
-png("./4_plots/ts_acf_plots_updated.png", width = 800, height = 900)
-# dev.off() # Close the graphics device
-
-par(mfrow = c(3, 1)) # Set up a 3x1 layout for plots
-acf(univariate_ts, lag.max = 48, main = "BEVs")
-acf(resid(fit), lag.max = 48, main = "Detrended")
-acf(diff(univariate_ts), lag.max = 48, main = "First Difference")
-# dev.off() # Close the graphics device
-
-
-## Classical and X11 decomposition of time series ------------------------------
+## Classical and X11 decomposition of time series 
 
 # Classical
-fit_2 <- decompose(univariate_ts)
-autoplot(fit_2)
-
-univariate_ts %>% decompose(type="multiplicative") %>% 
-  autoplot() + 
-  xlab("Year") + 
-  ggtitle("Classical multiplicative decomposition of Brazil's BEV stock")
+decomp_classic <- decompose(univariate_ts)
+autoplot(decomp_classic)
 
 # X11 
-fit_3 <- univariate_ts %>% seas(x11="") 
-autoplot(fit_3) +
+decomp_x11 <- univariate_ts %>% seas(x11="") 
+autoplot(decomp_x11) +
   ggtitle("X11 decomposition of Brazil's BEV stock")
-
-
-## Histogram of residuals ------------------------------------------------------
-
-checkresiduals(fit_3)
-png("./4_plots/residuals_plot_updated.png", width = 1000, height = 800)
-# dev.off() # Close the graphics device
-
 
 
 # 3. Linear Regression model (quadratic order trend) ---------------------------
@@ -72,7 +27,7 @@ h <- 60
 
 ### Diagnostic plots
 
-fit_TS %>%
+diagnostics_TS <- fit_TS %>%
   residuals() %>% ggtsdisplay()
 
 
@@ -111,7 +66,6 @@ if (!file.exists("./4_plots/plot_fcast_TS.png")) {
 ### Performance metrics --------------------------------------------------------
 
 accuracy(fcast_TS)
-
 accuracy_TS <- accuracy(fcast_TS)
 
 

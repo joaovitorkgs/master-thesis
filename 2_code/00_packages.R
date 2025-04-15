@@ -5,6 +5,7 @@ pacman::p_load(
   dplyr,        # Data manipulation: filter, summarize, mutate, and more
   tidyr,        # Data tidying: pivot, handle missing values, reshape
   janitor,      # Clean messy data and create summary tables
+  forcats,      # Handle categorical variables (factors)
   
   # Data Import and Export
   readr,        # Read flat files (CSV, TSV) into tibbles
@@ -14,12 +15,13 @@ pacman::p_load(
   archive,      # Extract files from compressed archives (.zip, .tar.gz)
   
   # Data Visualization
-  grid,
   ggplot2,      # Create customizable visualizations with grammar of graphics
   scales,       # Format axes and legends (percentages, currencies)
   viridis,      # Colorblind-friendly color palettes
   RColorBrewer, # Additional color palettes for plots
   gridExtra,    # Arrange multiple grid-based plots on a page
+  ggfortify,    # Unified plotting interface for stats objects
+  grid,         # Low-level graphics system
   
   # String Manipulation
   stringr,      # Simple and consistent string manipulation functions
@@ -48,21 +50,18 @@ pacman::p_load(
   DescTools,    # Tools for descriptive statistics
   rsample,      # Functions for resampling data
   
-  # Econometrics and Time Series Analysis
+  # Time Series Analysis
   plm,          # Panel data analysis (fixed/random effects models)
-  urca,         # Unit root and cointegration tests for time series
   forecast,     # Time series forecasting functions and models
-  
-  forcats,
-  astsa,
-  xts,
-  ggfortify,
-  seasonal,
-  urca,
-  fable,
-  tsibble,
-  prophet
+  astsa,        # Applied statistical time series analysis
+  xts,          # Extensible time series class and methods
+  seasonal,     # Seasonal adjustment of time series
+  urca,         # Unit root and cointegration tests
+  fable,        # Modern time series modeling framework
+  tsibble,      # Tidy temporal data structures
+  prophet       # Forecasting procedure for time series
 )
+
 
 print("The packages have been successfully loaded.")
 

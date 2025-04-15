@@ -108,7 +108,3 @@ if (!file.exists("./4_plots/plot_fcast_fitvsobs_Prophet.png")) {
 
 
 
-
-
-
-

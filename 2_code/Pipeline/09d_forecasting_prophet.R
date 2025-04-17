@@ -58,14 +58,15 @@ if (!file.exists("./4_plots/plot_fcast_Prophet.png")) {
 
 # Cross-validation
 df_cv <- cross_validation(fit_Prophet,
-                          units    = "days",
-                          horizon  = 180,
-                          period   = 90,
-                          initial  = 890)
+                          units    = "days", # Prophet only takes days as unit
+                          horizon  = 360,    # 12 months ≈ 360 days
+                          period   = 180,    # 6 months ≈ 180 days
+                          initial  = 720)    # 24 months ≈ 720 days
 
 df_p <- performance_metrics(df_cv)
 
 plot_cross_validation_metric(df_cv, metric = 'rmse')
+
 
 
 ### Observed vs. Fitted Plot ---------------------------------------------------

@@ -186,8 +186,6 @@ accuracy_all_cf <- accuracy_TS_df %>%
   select(model,RMSE,MAE,MAPE) %>% 
   rename(Model = model)
 
-
-
 accuracy_Prophet_df <- tail(df_p,1) %>% 
   mutate(Model = "Prophet") %>% 
   rename(
@@ -214,8 +212,6 @@ if (    !file.exists("./6_tables/accuracy_all_models.csv")) {
 } else {
   print("File already exists in the repository.")
 }
-
-?accuracy()
 
 
 # 3. Combined forecasting plots ------------------------------------------------
@@ -293,7 +289,7 @@ fcast_TS_df <- data.frame(
 )
 
 # Testing data visualization
-ggplot(fcast_TS_df, aes(x = date, y = actual)) +
+plot_fcast_TS_2 <- ggplot(fcast_TS_df, aes(x = date, y = actual)) +
   # Observed values from 2020 to 2025
   geom_line(color = "black", size = 1) +
   
@@ -313,6 +309,16 @@ ggplot(fcast_TS_df, aes(x = date, y = actual)) +
   scale_y_continuous(labels = comma) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
+if (!file.exists("./4_plots/plot_fcast_TS_2.png")) {
+  ggsave(        "./4_plots/plot_fcast_TS_2.png",
+                 plot   = plot_fcast_TS_2,
+                 height = 6,
+                 width  = 8)
+  print("File successfully saved.")
+} else {
+  print("File already exists in the repository.")
+}
+
 ## ETS  -------------------------------------------------------------------------
 
 # Extracting data from model
@@ -331,7 +337,7 @@ fcast_ETS_df <- data.frame(
 )
 
 # Testing data visualization
-ggplot(fcast_ETS_df, aes(x = date, y = actual)) +
+plot_fcast_ETS_2 <- ggplot(fcast_ETS_df, aes(x = date, y = actual)) +
   # Observed values from 2020 to 2025
   geom_line(color = "black", size = 1) +
   
@@ -351,6 +357,17 @@ ggplot(fcast_ETS_df, aes(x = date, y = actual)) +
   scale_y_continuous(labels = comma) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
+
+if (!file.exists("./4_plots/plot_fcast_ETS_2.png")) {
+  ggsave(        "./4_plots/plot_fcast_ETS_2.png",
+                 plot   = plot_fcast_ETS_2,
+                 height = 6,
+                 width  = 8)
+  print("File successfully saved.")
+} else {
+  print("File already exists in the repository.")
+}
+
 ## ARIMA -----------------------------------------------------------------------
 
 # Extracting data from model
@@ -369,7 +386,7 @@ fcast_ARIMA_df <- data.frame(
 )
 
 # Testing data visualization
-ggplot(fcast_ARIMA_df, aes(x = date, y = actual)) +
+plot_fcast_ARIMA_2 <- ggplot(fcast_ARIMA_df, aes(x = date, y = actual)) +
   # Observed values from 2020 to 2025
   geom_line(color = "black", size = 1) +
   
@@ -389,6 +406,16 @@ ggplot(fcast_ARIMA_df, aes(x = date, y = actual)) +
   scale_y_continuous(labels = comma) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
+if (!file.exists("./4_plots/plot_fcast_ARIMA_2.png")) {
+  ggsave(        "./4_plots/plot_fcast_ARIMA_2.png",
+                 plot   = plot_fcast_ARIMA_2,
+                 height = 6,
+                 width  = 8)
+  print("File successfully saved.")
+} else {
+  print("File already exists in the repository.")
+}
+
 
 ## Prophet ---------------------------------------------------------------------
 
@@ -398,17 +425,13 @@ fcast_Prophet_1 <- fcast_Prophet %>%
   mutate(across(c(yhat_lower, yhat_upper, trend_lower, trend_upper), ~NA)) %>% 
   rename(actual = yhat, # I have to correct this at some point; these are not the actual values
          Prophet_lower_80      = yhat_lower,
-         Prophet_lower_95      = trend_lower,
-         Prophet_upper_80      = yhat_upper,
-         Prophet_upper_95      = trend_upper) 
+         Prophet_upper_80      = yhat_upper) 
 
 fcast_Prophet_2 <- fcast_Prophet %>% 
   tail(60) %>% 
   select(ds, yhat, yhat_lower, yhat_upper, trend_lower, trend_upper) %>% 
   rename(Prophet_lower_80      = yhat_lower,
-         Prophet_lower_95      = trend_lower,
          Prophet_upper_80      = yhat_upper,
-         Prophet_upper_95      = trend_upper,
          Prophet_mean          = yhat)
 
 fcast_Prophet_data <- full_join(fcast_Prophet_1,fcast_Prophet_2) 
@@ -418,21 +441,17 @@ fcast_Prophet_df <- data.frame(
   date = as.Date(fcast_Prophet_data$ds),
   actual = as.numeric(fcast_ARIMA_data[,1]),
   Prophet_lower_80 = as.numeric(fcast_Prophet_data$Prophet_lower_80),
-  Prophet_lower_95 = as.numeric(fcast_Prophet_data$Prophet_lower_95),
   Prophet_upper_80 = as.numeric(fcast_Prophet_data$Prophet_upper_80),
-  Prophet_upper_95 = as.numeric(fcast_Prophet_data$Prophet_upper_95),
   Prophet_mean     = as.numeric(fcast_Prophet_data$Prophet_mean))
   
 
 # Testing data visualization
-ggplot(fcast_Prophet_df, aes(x = date, y = actual)) +
+plot_fcast_Prophet_2 <- ggplot(fcast_Prophet_df, aes(x = date, y = actual)) +
   # Observed values from 2020 to 2025
   geom_line(color = "black", size = 1) +
   
   # ARIMA projections
   geom_line(aes(y = Prophet_mean), color = "brown4", size = 0.8, linetype = "dashed") +
-  geom_ribbon(data = subset(fcast_Prophet_df, is.na(actual)),
-              aes(ymin = Prophet_lower_95, ymax = Prophet_upper_95), fill = "brown4", alpha = 0.2) +
   geom_ribbon(data = subset(fcast_Prophet_df, is.na(actual)),
               aes(ymin = Prophet_lower_80, ymax = Prophet_upper_80), fill = "brown4", alpha = 0.3) +
   # Plot labels and theme
@@ -444,4 +463,254 @@ ggplot(fcast_Prophet_df, aes(x = date, y = actual)) +
   scale_y_continuous(labels = comma) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
+if (!file.exists("./4_plots/plot_fcast_Prophet_2.png")) {
+  ggsave(        "./4_plots/plot_fcast_Prophet_2.png",
+                 plot   = plot_fcast_Prophet_2,
+                 height = 6,
+                 width  = 8)
+  print("File successfully saved.")
+} else {
+  print("File already exists in the repository.")
+}
+
+
+## VA  -------------------------------------------------------------------------
+
+# Creating data frame with projections
+fc_dates <-    seq(from = as.Date("2025-01-01"), 
+                     to = as.Date("2029-12-01"), 
+                     by = "month")
+
+# Extracting values from list object
+VA_lower <- data.frame(fcast_VA_selected_BEV$lower) %>% 
+  rename(VA_lower_80 = X80.,
+         VA_lower_95 = X95.)
+
+VA_upper <- data.frame(fcast_VA_selected_BEV$upper) %>% 
+  rename(VA_upper_80 = X80.,
+         VA_upper_95 = X95.)
+
+VA_mean <- data.frame(fcast_VA_selected_BEV$mean) %>% 
+  rename(VA_mean = fcast_VA_selected_BEV.mean)
+
+fcast_VA_df_1 <- data.frame(
+  date = as.Date(time(fcast_ETS_data)),
+  actual = as.numeric(fcast_ETS_data[,1]))
+
+# Adding values to projections data frame
+fcast_VA_df_2 <- data.frame(fc_dates)
+fcast_VA_df_2 <- fcast_VA_df_2 %>% 
+  rename(date = fc_dates)
+fcast_VA_df_2$VA_lower_80 <- VA_lower$VA_lower_80
+fcast_VA_df_2$VA_lower_95 <- VA_lower$VA_lower_95
+fcast_VA_df_2$VA_upper_80 <- VA_upper$VA_upper_80
+fcast_VA_df_2$VA_upper_95 <- VA_upper$VA_upper_95
+fcast_VA_df_2$VA_mean     <- VA_mean$VA_mean
+
+fcast_VA_df <- full_join(fcast_VA_df_1, fcast_VA_df_2, by = "date")
+
+# Testing data visualization
+plot_fcast_VA_2 <- ggplot(fcast_VA_df, aes(x = date, y = actual)) +
+  # Observed values from 2020 to 2025
+  geom_line(color = "black", size = 1) +
+  
+  # VA projections
+  geom_line(aes(y = VA_mean), color = "purple4", size = 0.8, linetype = "dashed") +
+  geom_ribbon(data = subset(fcast_VA_df, is.na(actual)),
+              aes(ymin = VA_lower_95, ymax = VA_upper_95), fill = "purple4", alpha = 0.2) +
+  geom_ribbon(data = subset(fcast_VA_df, is.na(actual)),
+              aes(ymin = VA_lower_80, ymax = VA_upper_80), fill = "purple4", alpha = 0.3) +
+  
+  # Plot labels and theme
+  labs(title = "Projected Values: VA Model",
+       x = "Date",
+       y = "Value") +
+  theme_bw() +
+  scale_x_date(date_breaks = "12 month", date_labels = "%Y") +
+  scale_y_continuous(labels = comma) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+if (!file.exists("./4_plots/plot_fcast_VA_2.png")) {
+  ggsave(        "./4_plots/plot_fcast_VA_2.png",
+                 plot   = plot_fcast_VA_2,
+                 height = 6,
+                 width  = 8)
+  print("File successfully saved.")
+} else {
+  print("File already exists in the repository.")
+}
+
+
+## All projections -------------------------------------------------------------
+
+### One single plot, one panel -------------------------------------------------
+
+# Create the combined visualization
+combined_forecast_plot <- ggplot() +
+  # AAtual data line 
+  geom_line(data = fcast_TS_df, aes(x = date, y = actual), 
+            color = "black", size = 1) +
+  
+  # TS model forecast
+  geom_line(data = subset(fcast_TS_df, is.na(actual)), 
+            aes(x = date, y = TS_mean, color = "TS"), 
+            size = 0.8, linetype = "dashed") +
+  geom_ribbon(data = subset(fcast_TS_df, is.na(actual)),
+              aes(x = date, ymin = TS_lower_80, ymax = TS_upper_80, fill = "TS"), 
+              alpha = 0.2) +
+  
+  # ETS model forecast
+  geom_line(data = subset(fcast_ETS_df, is.na(actual)), 
+            aes(x = date, y = ETS_mean, color = "ETS"), 
+            size = 0.8, linetype = "dashed") +
+  geom_ribbon(data = subset(fcast_ETS_df, is.na(actual)),
+              aes(x = date, ymin = ETS_lower_95, ymax = ETS_upper_95, fill = "ETS"), 
+              alpha = 0.2) +
+  
+  # ARIMA model forecast
+  geom_line(data = subset(fcast_ARIMA_df, is.na(actual)), 
+            aes(x = date, y = ARIMA_mean, color = "ARIMA"), 
+            size = 0.8, linetype = "dashed") +
+  geom_ribbon(data = subset(fcast_ARIMA_df, is.na(actual)),
+              aes(x = date, ymin = ARIMA_lower_95, ymax = ARIMA_upper_95, fill = "ARIMA"), 
+              alpha = 0.2) +
+  
+  # Prophet model forecast
+  geom_line(data = subset(fcast_Prophet_df, is.na(actual)), 
+            aes(x = date, y = Prophet_mean, color = "Prophet"), 
+            size = 0.8, linetype = "dashed") +
+  geom_ribbon(data = subset(fcast_Prophet_df, is.na(actual)),
+              aes(x = date, ymin = Prophet_lower_80, ymax = Prophet_upper_80, fill = "Prophet"), 
+              alpha = 0.2) +
+  
+  # VA model forecast
+  geom_line(data = subset(fcast_VA_df, is.na(actual)), 
+            aes(x = date, y = VA_mean, color = "VA"), 
+            size = 0.8, linetype = "dashed") +
+  geom_ribbon(data = subset(fcast_VA_df, is.na(actual)),
+              aes(x = date, ymin = VA_lower_95, ymax = VA_upper_95, fill = "VA"), 
+              alpha = 0.2) +
+  
+  scale_color_manual(name = "Model", 
+                     values = c("TS" = "red", 
+                                "ETS" = "orange3", 
+                                "ARIMA" = "blue", 
+                                "Prophet" = "green4", 
+                                "VA" = "purple4")) +
+  
+  scale_fill_manual(name = "Model", 
+                    values = c("TS" = "red", 
+                               "ETS" = "orange3", 
+                               "ARIMA" = "blue", 
+                               "Prophet" = "green3", 
+                               "VA" = "purple4")) +
+  
+  labs(title = "Comparison of Forecast Models",
+       x = "Date",
+       y = "Value") +
+  theme_bw() +
+  scale_x_date(date_breaks = "12 month", date_labels = "%Y") +
+  scale_y_continuous(labels = scales::comma) +
+  theme(legend.position = "right",
+        legend.box = "horizontal",
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.title = element_text(face = "bold")) 
+  
+# Display the plot
+combined_forecast_plot
+
+if (!file.exists("./4_plots/combined_forecast_plot.png")) {
+  ggsave(        "./4_plots/combined_forecast_plot.png",
+                 plot   = combined_forecast_plot,
+                 height = 6,
+                 width  = 8)
+  print("File successfully saved.")
+} else {
+  print("File already exists in the repository.")
+}
+
+
+### One single plot, multiple panels -------------------------------------------
+
+# List to store all dataframes
+all_forecasts <- list()
+
+# Prepare TS data for binding
+ts_data <- fcast_TS_df %>%
+  select(date, actual, TS_mean, TS_lower_95, TS_upper_95) %>%
+  rename(mean = TS_mean, lower_95 = TS_lower_95, upper_95 = TS_upper_95) %>%
+  mutate(model = "TS")
+all_forecasts[[1]] <- ts_data
+
+# Prepare ETS data
+ets_data <- fcast_ETS_df %>%
+  select(date, actual, ETS_mean, ETS_lower_95, ETS_upper_95) %>%
+  rename(mean = ETS_mean, lower_95 = ETS_lower_95, upper_95 = ETS_upper_95) %>%
+  mutate(model = "ETS")
+all_forecasts[[2]] <- ets_data
+
+# Prepare ARIMA data
+arima_data <- fcast_ARIMA_df %>%
+  select(date, actual, ARIMA_mean, ARIMA_lower_95, ARIMA_upper_95) %>%
+  rename(mean = ARIMA_mean, lower_95 = ARIMA_lower_95, upper_95 = ARIMA_upper_95) %>%
+  mutate(model = "ARIMA")
+all_forecasts[[3]] <- arima_data
+
+# Prepare Prophet data (using 80% intervals)
+prophet_data <- fcast_Prophet_df %>%
+  select(date, actual, Prophet_mean, Prophet_lower_80, Prophet_upper_80) %>%
+  rename(mean = Prophet_mean, lower_95 = Prophet_lower_80, upper_95 = Prophet_upper_80) %>%
+  mutate(model = "Prophet")
+all_forecasts[[4]] <- prophet_data
+
+# Prepare VA data
+va_data <- fcast_VA_df %>%
+  select(date, actual, VA_mean, VA_lower_95, VA_upper_95) %>%
+  rename(mean = VA_mean, lower_95 = VA_lower_95, upper_95 = VA_upper_95) %>%
+  mutate(model = "VA")
+all_forecasts[[5]] <- va_data
+
+# Combine all dataframes
+combined_data <- bind_rows(all_forecasts)
+
+# Create the faceted plot
+faceted_forecast_plot <- ggplot(combined_data, aes(x = date)) +
+  # Actual data line
+  geom_line(aes(y = actual), color = "black", size = 1) +
+  
+  # Forecast line and ribbon (only for forecast period)
+  geom_line(data = subset(combined_data, is.na(actual)),
+            aes(y = mean), color = "red3", linetype = "dashed", size = 0.8) +
+  geom_ribbon(data = subset(combined_data, is.na(actual)),
+              aes(ymin = lower_95, ymax = upper_95), fill = "red3", alpha = 0.2) +
+  
+  # Facet by model
+  facet_wrap(~ model, ncol = 3) +
+  
+  # Labels and theme
+  labs(title = "Comparison of Forecast Models",
+       x = "Date",
+       y = "Value") +
+  theme_bw() +
+  scale_x_date(date_breaks = "24 month", date_labels = "%Y") +
+  scale_y_continuous(labels = scales::comma) +
+  theme(
+    strip.background = element_rect(fill = "gray90"),
+    strip.text = element_text(face = "bold", size = 11),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.spacing = unit(0.5, "lines")
+  )
+
+# Display the plot
+faceted_forecast_plot
+
+if (!file.exists("./4_plots/faceted_forecast_plot.png")) {
+  ggsave(        "./4_plots/faceted_forecast_plot.png",
+                 plot   = faceted_forecast_plot,
+                 height = 6,
+                 width  = 8)
+  print("File successfully saved.")
+} else {
+  print("File already exists in the repository.")
+}
 

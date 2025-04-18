@@ -4,6 +4,8 @@ source("./2_code/Pipeline/09a_forecasting_TS.R")
 source("./2_code/Pipeline/09b_forecasting_ARIMA.R")
 source("./2_code/Pipeline/09c_forecasting_ETS.R")
 source("./2_code/Pipeline/09d_forecasting_prophet.R")
+source("./2_code/Pipeline/09e_forecasting_VA.R")
+
 
 # 2. Combined observed vs. fitted plots ----------------------------------------
 
@@ -24,14 +26,20 @@ time_df_Prophet_clean <- time_df_Prophet %>%
   rename("Prophet" = "yhat") %>% 
   select("date", "Prophet")
 
+time_df_VA_clean <- time_df_VA %>% 
+  rename("VA" = "fitted") %>% 
+  select("date", "VA")
+
+
 time_df_all <- time_df_TS_clean %>% 
-  left_join(time_df_ETS_clean, by = "date") %>% 
-  left_join(time_df_ARIMA_clean, by = "date") %>% 
-  left_join(time_df_Prophet_clean, by = "date") 
+  left_join(time_df_ETS_clean,     by = "date") %>% 
+  left_join(time_df_ARIMA_clean,   by = "date") %>% 
+  left_join(time_df_Prophet_clean, by = "date") %>% 
+  left_join(time_df_VA_clean,      by = "date") 
 
 plot_df <- time_df_all %>%
   pivot_longer(
-    cols = c(Linear, ETS, ARIMA, Prophet),
+    cols = c(Linear, ETS, ARIMA, Prophet, VA),
     names_to = "model",
     values_to = "fitted_value"
   )
@@ -45,21 +53,21 @@ plot_fitvsobs_all <- ggplot(plot_df, aes(x = date)) +
   scale_color_manual(
     values = c(
       "Observed" = "black",
-      "Linear" = "orange3",
-      "ETS" = "red3",
-      "ARIMA" = "blue3",
-      "Prophet" = "green4"
+      "Linear"   = "orange3",
+      "ETS"      = "red3",
+      "ARIMA"    = "blue3",
+      "Prophet"  = "green4",
+      "VA"       = "purple3"
     )
   ) +
   labs(
     title = "Observed vs. Fitted Values Across Forecasting Models",
-    x = "Date",
-    y = "Value",
-    color = "Series"
+    x = "Year",
+    y = "BEV Stock"
   ) +
   theme_bw(base_size = 12) +
   theme(
-    legend.position = "bottom",
+    legend.position = "",
     panel.grid.minor = element_blank(),
     plot.title = element_text(hjust = 0.5, face = "bold")
   ) +
@@ -68,7 +76,8 @@ plot_fitvsobs_all <- ggplot(plot_df, aes(x = date)) +
     date_labels = "%Y",
     expand = expansion(mult = 0.02)
   ) +
-  scale_y_continuous(labels = comma) 
+  scale_y_continuous(labels = comma) +
+  facet_wrap(~ model, nrow = 2)
 
 if (!file.exists("./4_plots/plot_fitvsobs_all.png")) {
   ggsave("./4_plots/plot_fitvsobs_all.png",
@@ -168,12 +177,14 @@ accuracy_ETS_df <- data.frame(accuracy_ETS) %>%
 accuracy_ARIMA_df <- data.frame(accuracy_ARIMA) %>% 
   mutate(model = "ARIMA")
 
+accuracy_VA_df <- data.frame(accuracy_VA) %>% 
+  mutate(model = "VA")
+
 accuracy_all_cf <- accuracy_TS_df %>% 
-  rbind(accuracy_ETS_df,accuracy_ARIMA_df) %>% 
+  rbind(accuracy_ETS_df,accuracy_ARIMA_df, accuracy_VA_df) %>% 
   select(model,ME,RMSE,MAE,MPE,MAPE,MASE,ACF1) %>% 
   select(model,RMSE,MAE,MAPE) %>% 
   rename(Model = model)
-
 
 
 

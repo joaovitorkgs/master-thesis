@@ -66,6 +66,9 @@ pacman::p_load(
 
 conflicts_prefer(dplyr::select)
 conflicts_prefer(dplyr::filter)
+conflicts_prefer(forecast::gas)
+conflicts_prefer(vars::VAR)
+conflicts_prefer(fabletools::accuracy)
 
 print("The packages have been successfully loaded.")
 

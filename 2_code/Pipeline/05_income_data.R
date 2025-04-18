@@ -50,12 +50,12 @@ if (!file.exists(  "./3_processed_data/income_data_wide.csv")) {
 summary(income_data_wide)
 
 
-# Given the lack of data for the years between 2021 and 2023, I decided to create
+# Given the lack of data for the years between 2021 and 2024, I decided to create
 # synthetic data for the missing data points using linear regressions for the 
 # available parametres and extrapolate to the missing years.
 
 # Define the years for prediction
-future_years <- data.frame(year = c(2021, 2022, 2023))
+future_years <- data.frame(year = c(2021, 2022, 2023, 2024))
 
 # Define a function to fit linear regression and predict future values
 predict_future_values <- function(data) {
@@ -107,6 +107,104 @@ income_data_wide_syn <- bind_rows(income_data_wide, synthetic_data) %>%
 income_data_wide_uf <- income_data_wide_syn %>% 
   filter(sigla_uf != "BRASIL",
          year > 2012)
+
+income_data_wide_br <- income_data_wide_syn %>% 
+  filter(sigla_uf == "BRASIL",
+         year > 2012)
+
+## Preparing national data for the multivariate models with interpolated monthly data
+
+income_data_br <- income_data_wide_br %>%
+  mutate(date = as.Date(paste(year, "12", "01", sep = "-"))) %>% 
+  select(date, year, avg_taxable_income_50, avg_taxable_income_90, avg_taxable_income_100) %>% 
+  filter(year > 2018)
+
+monthly_dates <- seq(from = as.Date("2019-12-01"), 
+                     to = as.Date("2024-12-01"), 
+                     by = "month")
+
+
+income_br_monthly <- data.frame(date = monthly_dates)
+
+# Perform linear interpolation for each income variable
+income_br_monthly$avg_taxable_income_50 <- approx(
+  x = as.numeric(income_data_br$date),
+  y = income_data_br$avg_taxable_income_50,
+  xout = as.numeric(income_br_monthly$date)
+)$y
+
+income_br_monthly$avg_taxable_income_90 <- approx(
+  x = as.numeric(income_data_br$date),
+  y = income_data_br$avg_taxable_income_90,
+  xout = as.numeric(income_br_monthly$date)
+)$y
+
+income_br_monthly$avg_taxable_income_100 <- approx(
+  x = as.numeric(income_data_br$date),
+  y = income_data_br$avg_taxable_income_100,
+  xout = as.numeric(income_br_monthly$date)
+)$y
+
+income_br_monthly %>% 
+  ggplot(aes(x=date,y=avg_taxable_income_100)) +
+  geom_line()
+
+
+if (!file.exists(  "./3_processed_data/income_br_monthly_nominal.csv")) {
+  write_csv(income_br_monthly,
+            file = "./3_processed_data/income_br_monthly_nominal.csv")
+  print("File succesfully written.")
+} else {
+  print("File already exists in the repository.")
+}
+
+
+
+# Deflating the values
+reference_date <- "12/2024"
+
+income_br_monthly_deflated <- income_br_monthly %>%
+  mutate(
+    # Deflate each income variable using IPCA (Consumer Price Index)
+    avg_taxable_income_50_real = deflate(
+      nominal_values = avg_taxable_income_50,
+      nominal_dates = date,
+      real_date = reference_date,
+      index = "ipca"
+    ),
+    
+    avg_taxable_income_90_real = deflate(
+      nominal_values = avg_taxable_income_90,
+      nominal_dates = date,
+      real_date = reference_date,
+      index = "ipca"
+    ),
+    
+    avg_taxable_income_100_real = deflate(
+      nominal_values = avg_taxable_income_100,
+      nominal_dates = date,
+      real_date = reference_date,
+      index = "ipca"
+    )
+  ) 
+
+income_br_monthly_deflated <- income_br_monthly_deflated %>% 
+  select(date,
+         avg_taxable_income_50_real,
+         avg_taxable_income_90_real,
+         avg_taxable_income_100_real) %>% 
+  rename(avg_taxable_income_50  = avg_taxable_income_50_real,
+         avg_taxable_income_90  = avg_taxable_income_90_real,
+         avg_taxable_income_100 = avg_taxable_income_100_real) 
+
+if (!file.exists(  "./3_processed_data/income_br_monthly_deflated.csv")) {
+  write_csv(income_br_monthly_deflated,
+            file = "./3_processed_data/income_br_monthly_deflated.csv")
+  print("File succesfully written.")
+} else {
+  print("File already exists in the repository.")
+}
+
 
 ## Visualizing the income distribution data set --------------------------------
 

@@ -12,8 +12,10 @@ df_fleet_brazil       <- read_csv("./3_processed_data/df_fleet_brazil.csv")
 # Vehicle price data
 price_df              <- read_csv("./3_processed_data/fipe_price_monthly_trends_deflated.csv")
 
-# Income distribution per state 
-income_data_wide_uf   <- read_csv("./3_processed_data/income_data_wide_uf.csv")
+# Income data
+income_data_wide_uf   <- read_csv("./3_processed_data/income_data_wide_uf.csv") # State-level
+income_data_wide_br   <- read_csv("./3_processed_data/income_br_monthly_deflated.csv") # BR-level
+income_data_wide_br   <- read_csv("./3_processed_data/income_br_monthly_nominal.csv") # BR-level
 
 # Population data
 BR_pop_monthly        <- read_csv("./3_processed_data/BR_pop_monthly.csv")
@@ -70,7 +72,8 @@ df_fleet_brazil_pop  <- df_fleet_brazil %>%
   filter(year > 2019) %>% 
   left_join(BR_pop_monthly_20_24, by = "date")
 
-
+df_fleet_brazil_pop_income  <- df_fleet_brazil_pop %>% 
+  left_join(income_data_wide_br, by = "date")
 
 
 
@@ -89,7 +92,7 @@ univariate_ts <- df_fleet_brazil %>%
 
 ## Data for the multivariate time series -----------------------------------------
 
-multivariate_ts <- df_fleet_brazil_pop %>% 
+multivariate_ts <- df_fleet_brazil_pop_income %>% 
   arrange(date) %>% 
   ts(start = c(start_year, start_month), frequency = 12)
 

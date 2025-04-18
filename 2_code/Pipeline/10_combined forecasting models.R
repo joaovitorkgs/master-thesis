@@ -606,8 +606,8 @@ combined_forecast_plot <- ggplot() +
                                "VA" = "purple4")) +
   
   labs(title = "Comparison of Forecast Models",
-       x = "Date",
-       y = "Value") +
+       x = "Year",
+       y = "BEV Stock") +
   theme_bw() +
   scale_x_date(date_breaks = "12 month", date_labels = "%Y") +
   scale_y_continuous(labels = scales::comma) +
@@ -689,8 +689,8 @@ faceted_forecast_plot <- ggplot(combined_data, aes(x = date)) +
   
   # Labels and theme
   labs(title = "Comparison of Forecast Models",
-       x = "Date",
-       y = "Value") +
+       x = "Year",
+       y = "BEV Stock") +
   theme_bw() +
   scale_x_date(date_breaks = "24 month", date_labels = "%Y") +
   scale_y_continuous(labels = scales::comma) +

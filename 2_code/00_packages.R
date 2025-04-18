@@ -59,9 +59,13 @@ pacman::p_load(
   urca,         # Unit root and cointegration tests
   fable,        # Modern time series modeling framework
   tsibble,      # Tidy temporal data structures
-  prophet       # Forecasting procedure for time series
+  prophet,      # Forecasting procedure for time series
+  vars,
+  conflicted
 )
 
+conflicts_prefer(dplyr::select)
+conflicts_prefer(dplyr::filter)
 
 print("The packages have been successfully loaded.")
 

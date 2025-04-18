@@ -31,7 +31,7 @@ diagnostics_TS <- fit_TS %>%
   residuals() %>% ggtsdisplay()
 
 
-### Data frame with forecasted values ------------------------------------------
+### List with forecasted values ------------------------------------------------
 
 fcast_TS <- forecast(fit_TS, h=h)
 

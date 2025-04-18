@@ -15,6 +15,10 @@ price_df              <- read_csv("./3_processed_data/fipe_price_monthly_trends_
 # Income distribution per state 
 income_data_wide_uf   <- read_csv("./3_processed_data/income_data_wide_uf.csv")
 
+# Population data
+BR_pop_monthly        <- read_csv("./3_processed_data/BR_pop_monthly.csv")
+
+
 # 3. Data transformation for the models ----------------------------------------
 
 ## Data for the linear regressions ---------------------------------------------
@@ -56,58 +60,36 @@ if (!file.exists(  "./3_processed_data/df_combined_state.csv")) {
   print("File already exists in the repository")
 }
 
+## Adding population data to df_fleet_brazil 
+
+BR_pop_monthly_20_24 <- BR_pop_monthly %>% 
+  tail(60) 
+
+
+df_fleet_brazil_pop  <- df_fleet_brazil %>% 
+  filter(year > 2019) %>% 
+  left_join(BR_pop_monthly_20_24, by = "date")
+
+
+
+
+
 ## Data for the univariate time series -----------------------------------------
 
 start_year  <- 2020
 start_month <- 01
 
 
-df <-  df_fleet_state%>% 
-  group_by(date) %>% 
-  summarize(BEV=sum(BEV))
-
-df_combined_state %>% 
-  group_by(date) %>% 
-  summarize(BEV=sum(electric))
-
-fleet_df_ts <- df_combined_state %>% 
-  select(sigla_uf, date, year, month, 
-         diesel, ethanol, gasoline, other, electric, PHEV,
-         population,
-         mean_gas, mean_hyb, min_ev,
-         avg_taxable_income_50, avg_taxable_income_100) %>% 
-  group_by(date) %>% 
-  summarize(
-    electric                   = sum(electric),
-    PHEV                       = sum(PHEV),
-    population                 = sum(population),
-    min_ev                     = mean(min_ev),
-    mean_gas                   = mean(mean_gas),
-    mean_hyb                   = mean(mean_hyb),
-    avg_taxable_income_50      = mean(avg_taxable_income_50),
-    avg_taxable_income_100     = mean(avg_taxable_income_100),
-    log_electric               = log(electric),
-    log_population             = log(population),
-    log_min_ev                 = log(min_ev),
-    log_mean_gas               = log(mean_gas),
-    log_mean_hyb               = log(mean_hyb),
-    log_avg_taxable_income_50  = log(avg_taxable_income_50),
-    log_avg_taxable_income_100 = log(avg_taxable_income_100)
-  ) %>%  
-  mutate(
-    electric   = if_else(date == as.Date("2018-06-01"), electric   / 2, electric),
-    population = if_else(date == as.Date("2018-06-01"), population / 2, population)
-  )
-
-
-multivariate_ts <- df_fleet_brazil %>% 
-  filter(year > 2019) %>% 
-  arrange(date) %>% 
-  ts(start = c(start_year, start_month), frequency = 12)
-
 univariate_ts <- df_fleet_brazil %>% 
   filter(year > 2019) %>% 
   arrange(date) %>% 
-  select(BEV) %>% 
+  dplyr::select(BEV) %>% 
+  ts(start = c(start_year, start_month), frequency = 12)
+
+
+## Data for the multivariate time series -----------------------------------------
+
+multivariate_ts <- df_fleet_brazil_pop %>% 
+  arrange(date) %>% 
   ts(start = c(start_year, start_month), frequency = 12)
 

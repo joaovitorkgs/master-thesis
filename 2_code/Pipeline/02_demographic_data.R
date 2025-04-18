@@ -31,7 +31,14 @@ if (!file.exists("./1_raw_data/0_demographics/ibge_pop_raw_df.csv")) {
   print("File already exists in the repository")
 }
 
-## 2.2. Data from project pipeline ---------------------------------------------
+
+## 2.2. Downloaded data --------------------------------------------------------
+
+ibge_pop_projections <- read_excel(
+  "1_raw_data/0_demographics/projecoes_2024_tab1_idade_simples.xlsx",
+  skip = 5)
+
+## 2.3. Data from project pipeline ---------------------------------------------
 
 fleet_2013_2024 <- read_csv("./1_raw_data/2_vehicle_fleet/frota_2013_2024.csv")
 
@@ -131,3 +138,50 @@ if (!file.exists(  "./3_processed_data/fleet_2013_2024_id.csv")) {
   print("File already exists in the repository")
 }
 
+## 4. Cleaning aggregate population data from national projections -------------
+
+BR_pop_projections <- ibge_pop_projections %>% 
+  filter(SIGLA == "BR",
+         SEXO  == "Ambos") %>% 
+  group_by(SIGLA) %>% 
+  summarize(
+    `2019` = sum(`2019`), 
+    `2020` = sum(`2020`), 
+    `2021` = sum(`2021`),  
+    `2022` = sum(`2022`),  
+    `2023` = sum(`2023`),  
+    `2024` = sum(`2024`))
+
+BR_pop_long <- BR_pop_projections %>%
+  pivot_longer(
+    cols = c("2019", "2020", "2021", "2022", "2023", "2024"),
+    names_to = "Year",
+    values_to = "Population"
+  ) %>% 
+  mutate(date = as.Date(paste(Year, "12", "01", sep = "-")))
+
+# Interpolating monthly data from the available projections
+
+monthly_dates <- seq(from = as.Date("2019-12-01"), 
+                     to = as.Date("2024-12-01"), 
+                     by = "month")
+
+BR_pop_monthly <- data.frame(date = monthly_dates)
+
+BR_pop_monthly$Population <- approx(
+  x = as.numeric(BR_pop_long$date),  # Convert dates to numeric for interpolation
+  y = BR_pop_long$Population,        # Original population values
+  xout = as.numeric(BR_pop_monthly$date)  # Dates to interpolate for
+)$y
+
+BR_pop_monthly %>% 
+  ggplot(aes(x=date, y=Population)) +
+  geom_line()
+
+
+if (!file.exists(  "./3_processed_data/BR_pop_monthly.csv")) {
+  write_csv(BR_pop_monthly,
+            file = "./3_processed_data/BR_pop_monthly.csv")
+} else {
+  print("File already exists in the repository")
+}

@@ -540,6 +540,62 @@ if (!file.exists("./4_plots/plot_fcast_VA_2.png")) {
   print("File already exists in the repository.")
 }
 
+## Combined data frames --------------------------------------------------------
+
+fcast_all_df <- fcast_TS_df %>% 
+  left_join(fcast_ETS_df, by = "date") %>% 
+  left_join(fcast_ARIMA_df, by = "date") %>% 
+  left_join(fcast_Prophet_df, by = "date") %>% 
+  left_join(fcast_VA_df, by = "date") %>% 
+  select(
+    date,
+    # Linear Regression
+    TS_mean, TS_lower_95, TS_upper_95,
+    # ETS
+    ETS_mean, ETS_lower_95, ETS_upper_95,
+    # SARIMA
+    ARIMA_mean, ARIMA_lower_95, ARIMA_upper_95,
+    # Prophet
+    Prophet_mean, Prophet_lower_80, Prophet_upper_80,
+    # Vector Autoregression
+    VA_mean, VA_lower_95, VA_upper_95
+  ) %>% 
+  tail(1)
+
+forecast_comparison <- data.frame(
+  Model = c("Time Series (TS)", "ETS", "ARIMA", "Prophet", "Vector Autoregression"),
+  Mean = c(fcast_all_df$TS_mean, fcast_all_df$ETS_mean, fcast_all_df$ARIMA_mean, 
+           fcast_all_df$Prophet_mean, fcast_all_df$VA_mean),
+  Lower_CI = c(fcast_all_df$TS_lower_95, fcast_all_df$ETS_lower_95, fcast_all_df$ARIMA_lower_95, 
+               fcast_all_df$Prophet_lower_80, fcast_all_df$VA_lower_95),
+  Upper_CI = c(fcast_all_df$TS_upper_95, fcast_all_df$ETS_upper_95, fcast_all_df$ARIMA_upper_95, 
+               fcast_all_df$Prophet_upper_80, fcast_all_df$VA_upper_95),
+  CI_Type = c("95%", "95%", "95%", "80%", "95%")
+)
+  
+forecast_comparison <- forecast_comparison[order(forecast_comparison$Mean, decreasing = TRUE), ]
+
+forecast_comparison$Mean <- format(round(forecast_comparison$Mean, 1), big.mark = ",")
+forecast_comparison$Lower_CI <- format(round(forecast_comparison$Lower_CI, 1), big.mark = ",")
+forecast_comparison$Upper_CI <- format(round(forecast_comparison$Upper_CI, 1), big.mark = ",")
+
+knitr::kable(forecast_comparison, 
+             col.names = c("Model", "Mean Forecast", "Lower CI", "Upper CI", "CI Type"))
+
+table_fcast_comparison <- knitr::kable(forecast_comparison, 
+             col.names = c("Model", "Mean Forecast", "Lower CI", "Upper CI", "CI Type"),
+             row.names = FALSE,
+             format = "html")
+             
+if (!file.exists(        "./6_tables/table_fcast_comparison.html")) {
+  kableExtra::save_kable("./6_tables/table_fcast_comparison.html",
+                 x = table_fcast_comparison)
+  print("File successfully saved.")
+} else {
+  print("File already exists in the repository.")
+}
+
+(table_fcast_comparison, file = table_fcast_comparison)
 
 ## All projections -------------------------------------------------------------
 

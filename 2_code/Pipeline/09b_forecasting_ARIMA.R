@@ -115,7 +115,7 @@ fit_ARIMA <- Arima(univariate_ts,
 ### Diagnostic plots
 
 fit_ARIMA %>%
-  residuals() %>% ggtsdisplay()
+  residuals() %>% ggtsdisplay(plot.type = "histogram") 
 
 # changing the first parameter to 1 yields a better visualisation of the residuals,
 # but it also increases the confidence margin a lot. why?

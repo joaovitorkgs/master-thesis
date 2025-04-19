@@ -47,7 +47,7 @@ fcast_VA_selected_BEV <- fcast_VA_selected$forecast$BEV
 
 # Diagnostic plots
 diagnostics_VA_selected <- fcast_VA_selected_BEV %>%
-  residuals() %>% ggtsdisplay()
+  residuals() %>% ggtsdisplay(plot.type = "histogram") 
 
 
 ### Plots with forecasted values -----------------------------------------------

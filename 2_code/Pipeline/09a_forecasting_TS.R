@@ -28,7 +28,7 @@ h <- 60
 ### Diagnostic plots
 
 diagnostics_TS <- fit_TS %>%
-  residuals() %>% ggtsdisplay()
+  residuals() %>% ggtsdisplay(plot.type = "histogram") 
 
 
 ### List with forecasted values ------------------------------------------------

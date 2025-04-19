@@ -214,6 +214,20 @@ if (    !file.exists("./6_tables/accuracy_all_models.csv")) {
 }
 
 
+fit_TS %>% 
+  residuals() %>% ggtsdisplay(plot.type = "histogram") 
+
+fit_ETS %>% 
+  residuals() %>% ggtsdisplay(plot.type = "histogram") 
+
+fit_ARIMA %>% 
+  residuals() %>% ggtsdisplay(plot.type = "histogram") 
+
+fcast_VA_selected_BEV %>%
+  residuals() %>% ggtsdisplay(plot.type = "histogram")
+
+
+
 # 3. Combined forecasting plots ------------------------------------------------
 
 plot_fcast_ARIMA_blank    <- plot_fcast_ARIMA   +

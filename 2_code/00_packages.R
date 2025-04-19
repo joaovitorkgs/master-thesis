@@ -61,7 +61,10 @@ pacman::p_load(
   tsibble,      # Tidy temporal data structures
   prophet,      # Forecasting procedure for time series
   vars,
-  conflicted
+  conflicted,
+  fable.prophet,
+  fable,
+  tsibbledata
 )
 
 conflicts_prefer(dplyr::select)

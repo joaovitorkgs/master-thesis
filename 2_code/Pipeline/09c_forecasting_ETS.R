@@ -7,8 +7,11 @@ source("./2_code/Pipeline/07_combined_data.R")
 # Holt-Winter's  method chosen over simple exponential smoothing due to seasonality
 fit_ETS <- hw(univariate_ts, seasonal = "additive", h=60)
 
-diagnostics_EST <- fit_ETS %>%
-  residuals() %>% ggtsdisplay()
+diagnostics_ETS <- fit_ETS %>%
+  residuals() %>% ggtsdisplay(plot.type = "histogram") 
+
+fit_ETS %>% 
+  gg_tsresiduals()
 
 holt(univariate_ts, seasonal = "multiplicative", h=60) %>% 
   forecast() %>% 

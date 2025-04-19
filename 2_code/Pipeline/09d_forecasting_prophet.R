@@ -68,7 +68,6 @@ df_p <- performance_metrics(df_cv)
 plot_cross_validation_metric(df_cv, metric = 'rmse')
 
 
-
 ### Observed vs. Fitted Plot ---------------------------------------------------
 
 
@@ -103,8 +102,9 @@ if (!file.exists("./4_plots/plot_fcast_fitvsobs_Prophet.png")) {
   print("File already exists in the repository.")
 }
 
-
-
+Prophet_RMSE <- sqrt(mean((time_df_Prophet$data - time_df_Prophet$yhat)^2))
+Prophet_MAE  <- mean(abs(time_df_Prophet$data - time_df_Prophet$yhat))
+Prophet_MAPE <- mean(abs((time_df_Prophet$data - time_df_Prophet$yhat)/time_df_Prophet$data))
 
 
 

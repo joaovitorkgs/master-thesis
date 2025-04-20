@@ -106,6 +106,66 @@ Prophet_RMSE <- sqrt(mean((time_df_Prophet$data - time_df_Prophet$yhat)^2))
 Prophet_MAE  <- mean(abs(time_df_Prophet$data - time_df_Prophet$yhat))
 Prophet_MAPE <- mean(abs((time_df_Prophet$data - time_df_Prophet$yhat)/time_df_Prophet$data))
 
+## 2.3. Robustness checks with residuals ---------------------------------------
 
+library(fable.prophet)
+library(fpp3)
+library(patchwork)
 
+# Creating the special object used for the prophet package
+univariate_ts_prophet <- tsibble::as_tsibble(univariate_ts)
 
+# Creating objects both for training data and actual forecasting
+prophet_fpp3_data  <- univariate_ts_prophet 
+prophet_fpp3_train <- univariate_ts_prophet %>% 
+  filter(year(index) <= 2022)
+
+# To generate the plots for residuals (time, ACF and histogram plots), I had to
+# recreate the model with similar specifications, but with a different package
+
+# Fitting the model
+fit_Prophet_fpp3 <- prophet_fpp3_data %>% 
+  model(
+    prophet = prophet(value ~ season("year", 1, type = "multiplicative")))
+
+# Testing the forecasting
+fcast_Prophet_fpp3 <- fit_Prophet_fpp3 %>% forecast(h = "5 years")
+
+# Plotting the forecasted values in the second model
+fcast_Prophet_fpp3 %>%  autoplot(prophet_fpp3_data)
+
+# Generating the plots for the residuals
+fit_Prophet_fpp3 %>% 
+  gg_tsresiduals()
+
+### Residuals Diagnostics plots ------------------------------------------------
+
+# Steps to manually prepare the plots, so that they better match other models
+
+# Extract residuals
+res <- residuals(fit_Prophet_fpp3)
+
+# Create the time plot with no y-axis label
+p1 <- res %>%
+  ggplot(aes(x = as.Date(index), y = .resid)) +
+  geom_line() +
+  geom_point(size = 0.7) +
+  scale_x_date(date_labels = "%Y", date_breaks = "1 years") +
+  theme(axis.title.y = element_blank(),
+        panel.grid.minor = element_line(color = "white"),
+        panel.grid.major = element_line(color = "white")) +
+  labs(title = "", x = "")
+
+# Create the ACF plot
+p2 <- ACF(res, .resid) %>% 
+  autoplot() + 
+  labs(title = "", y = "ACF", x = "Lag")
+
+# Create the histogram
+p3 <- ggplot(res, aes(x = .resid)) + 
+  geom_histogram(bins = 30, aes(y = ..density..), fill = "grey1", alpha = 0.7) + 
+  geom_density(color = "orangered", size = 0.5) +
+  labs(title = "", y = "df$y", x = "")
+
+# Arrange the plots
+(p1 / (p2 + p3)) + plot_layout(heights = c(1, 1))

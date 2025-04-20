@@ -109,3 +109,39 @@ plot_fcast_fitvsobs_VA <- ggplot(time_df_VA, aes(x = date)) +
 
 accuracy_all_VA <- accuracy(fcast_VA_selected_BEV)
 accuracy_selected_VA <- accuracy(fcast_VA_selected_BEV)
+
+
+### Correlation Matrix ---------------------------------------------------------
+
+multivariate_ts_df <- multivariate_ts[,4:14] %>%
+  as.data.frame()
+
+plot_correlation <- multivariate_ts_df %>% 
+  mutate(
+    Diesel                 = log(Diesel),
+    Ethanol                = log(Ethanol),
+    Gasoline               = log(Gasoline),
+    BEV                    = log(BEV),
+    PHEV                   = log(PHEV),
+    Population             = log(Population),
+    avg_taxable_income_50  = log(avg_taxable_income_50),
+    avg_taxable_income_100 = log(avg_taxable_income_100)) %>% 
+  select(Diesel, Ethanol, Gasoline, BEV, PHEV,
+         Population,
+         avg_taxable_income_50, avg_taxable_income_100) %>% 
+  rename(
+    `ICEV (Diesel)` = Diesel,
+    `ICEV (Ethanol)` = Ethanol,
+    `ICEV (Gasoline)` = Gasoline,
+    `Income (50th)` = avg_taxable_income_50,
+    `Income (100th)`= avg_taxable_income_100
+  ) %>% 
+  GGally::ggpairs()
+
+ggsave(
+  filename = "./4_plots/correlation_plot.png",
+  plot     = plot_correlation,
+  width    = 10,
+  height   = 6)
+
+

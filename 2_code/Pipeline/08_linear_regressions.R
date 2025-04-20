@@ -151,3 +151,6 @@ summary(ts_model_1)
 summary(ts_model_2)
 summary(ts_model_3)
 
+
+CV(ts_model_3)
+

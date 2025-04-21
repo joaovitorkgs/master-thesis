@@ -16,6 +16,19 @@ df_long <- df_fleet_brazil %>%
   ) %>% 
   pivot_longer(cols = c(`ICE (Gasoline)`, `ICE (Ethanol)`,`ICE (Diesel)`,  PHEV, BEV), names_to = "fuel_type", values_to = "total")
 
+options(scipen = 999)
+df_fleet_brazil %>% 
+  tail(1) %>% 
+  mutate(BEV_percent = 100*BEV/sum(Diesel, Ethanol, Gasoline, Gas, BEV, PHEV)) %>% 
+  select(BEV_percent)
+
+df_fleet_brazil %>% 
+  tail(1) %>% 
+  mutate(PHEV_percent = 100*PHEV/sum(Diesel, Ethanol, Gasoline, Gas, BEV, PHEV)) %>% 
+  select(PHEV_percent)
+
+9.66e-10
+
 # All powertrain and fuel categories
 plot_fleet_trend_cat <- ggplot(df_long, aes(x = date, y = total, color = fuel_type)) +
   geom_line(linewidth = 1) +

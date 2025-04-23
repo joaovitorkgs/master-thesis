@@ -444,12 +444,12 @@ ggsave("./4_plots/plot_trend_yearly_avg_prices_deflated.png",
 ### Average price (Deflated) ---------------------------------------------------
 
 plot_trend_yearly_avg_prices_deflated <- ggplot(fipe_price_trends_deflated, aes(x = anoReferencia)) +
-  geom_line(aes(y = avg_price_electric, color = "Electric"), size = 1) +
-  geom_line(aes(y = avg_price_hybrid,   color = "Hybrid"), size = 1) +
-  geom_line(aes(y = avg_price_gasoline, color = "Gasoline"), size = 1) +
+  geom_line(aes(y = avg_price_electric, color = "BEV"), size = 1) +
+  geom_line(aes(y = avg_price_hybrid,   color = "ICEVe"), size = 1) +
+  geom_line(aes(y = avg_price_gasoline, color = "ICEVg"), size = 1) +
   scale_color_manual(
     name = "Fuel Type",
-    values = c("Electric" = "orange3", "Hybrid" = "turquoise3", "Gasoline" = "red4")
+    values = c("ICEVg" = "orange3", "ICEVe" = "turquoise3", "BEV" = "red4")
   ) +
   scale_y_log10(
     breaks = c(10000, 20000, 50000, 100000, 200000, 500000), # Logarithmic progression
@@ -476,7 +476,9 @@ plot_trend_yearly_avg_prices_deflated <- ggplot(fipe_price_trends_deflated, aes(
   )
 
 ggsave("./4_plots/plot_trend_yearly_avg_prices_deflated.png",
-       plot = plot_trend_yearly_avg_prices_deflated)
+       plot = plot_trend_yearly_avg_prices_deflated,
+       width  = 6,
+       height = 4)
 
 
 ### Minimum price (Nominal) ---------------------------------------------------
@@ -558,15 +560,15 @@ ggsave("./4_plots/plot_trend_yearly_min_prices_deflated.png",
 
 plot_trend_yearly_nr_models <- 
   ggplot(fipe_price_trends_nominal, aes(x = anoReferencia)) +
-  geom_line(aes(y = nr_models_electric, color = "Electric"), size = 1) +
-  geom_line(aes(y = nr_models_hybrid,   color = "Hybrid"), size = 1) +
-  geom_line(aes(y = nr_models_gasoline, color = "Gasoline"), size = 1) +
+  geom_line(aes(y = nr_models_electric, color = "BEV"), size = 1) +
+  geom_line(aes(y = nr_models_hybrid,   color = "ICEVe"), size = 1) +
+  geom_line(aes(y = nr_models_gasoline, color = "ICEVg"), size = 1) +
   scale_color_manual(
-    name = "Fuel Type",
-    values = c("Electric" = "blue", "Hybrid" = "green", "Gasoline" = "red")
+    name = "Vehicle Type",
+    values = c("BEV" = "blue", "ICEVe" = "green", "ICEVg" = "red")
   ) + 
   scale_y_log10(
-    breaks = c(1, 100,1000,10000,25000, 50000), # Logarithmic progression
+    breaks = c(1, 100,1000,10000,50000), # Logarithmic progression
     limits = c(1,50000)
   ) +
   scale_x_continuous(

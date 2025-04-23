@@ -316,6 +316,6 @@ plot_trend_income_dist_9010 <-
   )
 
 ggsave(filename = "./4_plots/plot_trend_income_dist_905010 .png",
-       plot     = plot_trend_income_dist_905010 ,
+       plot     = plot_trend_income_dist_9010 ,
        width    = 10,
        height   = 5)

@@ -108,10 +108,6 @@ Prophet_MAPE <- mean(abs((time_df_Prophet$data - time_df_Prophet$yhat)/time_df_P
 
 ## 2.3. Robustness checks with residuals ---------------------------------------
 
-library(fable.prophet)
-library(fpp3)
-library(patchwork)
-
 # Creating the special object used for the prophet package
 univariate_ts_prophet <- tsibble::as_tsibble(univariate_ts)
 

@@ -27,8 +27,8 @@ time_df_Prophet_clean <- time_df_Prophet %>%
   select("date", "Prophet")
 
 time_df_VA_clean <- time_df_VA %>% 
-  rename("VA" = "fitted") %>% 
-  select("date", "VA")
+  rename("VAR" = "fitted") %>% 
+  select("date", "VAR")
 
 
 time_df_all <- time_df_TS_clean %>% 
@@ -39,7 +39,7 @@ time_df_all <- time_df_TS_clean %>%
 
 plot_df <- time_df_all %>%
   pivot_longer(
-    cols = c(Linear, ETS, ARIMA, Prophet, VA),
+    cols = c(Linear, ETS, ARIMA, Prophet, VAR),
     names_to = "model",
     values_to = "fitted_value"
   )
@@ -57,7 +57,7 @@ plot_fitvsobs_all <- ggplot(plot_df, aes(x = date)) +
       "ETS"      = "red3",
       "ARIMA"    = "blue3",
       "Prophet"  = "green4",
-      "VA"       = "purple3"
+      "VAR"       = "purple3"
     )
   ) +
   labs(
@@ -609,8 +609,6 @@ if (!file.exists(        "./6_tables/table_fcast_comparison.html")) {
   print("File already exists in the repository.")
 }
 
-(table_fcast_comparison, file = table_fcast_comparison)
-
 ## All projections -------------------------------------------------------------
 
 ### One single plot, one panel -------------------------------------------------
@@ -737,7 +735,7 @@ all_forecasts[[4]] <- prophet_data
 va_data <- fcast_VA_df %>%
   select(date, actual, VA_mean, VA_lower_95, VA_upper_95) %>%
   rename(mean = VA_mean, lower_95 = VA_lower_95, upper_95 = VA_upper_95) %>%
-  mutate(model = "VA")
+  mutate(model = "VAR")
 all_forecasts[[5]] <- va_data
 
 # Combine all dataframes

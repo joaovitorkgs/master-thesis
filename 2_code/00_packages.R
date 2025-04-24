@@ -64,7 +64,9 @@ pacman::p_load(
   conflicted,
   fable.prophet,
   fable,
-  tsibbledata
+  tsibbledata,
+  fpp3,
+  patchwork
 )
 
 conflicts_prefer(dplyr::select)
@@ -72,6 +74,7 @@ conflicts_prefer(dplyr::filter)
 conflicts_prefer(forecast::gas)
 conflicts_prefer(vars::VAR)
 conflicts_prefer(fabletools::accuracy)
+conflicts_prefer(prophet::prophet)
 
 print("The packages have been successfully loaded.")
 

@@ -10,9 +10,6 @@ fit_ETS <- hw(univariate_ts, seasonal = "additive", h=60)
 diagnostics_ETS <- fit_ETS %>%
   residuals() %>% ggtsdisplay(plot.type = "histogram") 
 
-fit_ETS %>% 
-  gg_tsresiduals()
-
 holt(univariate_ts, seasonal = "multiplicative", h=60) %>% 
   forecast() %>% 
   autoplot()

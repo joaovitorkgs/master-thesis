@@ -106,8 +106,6 @@ Arima(univariate_ts, order=c(0,1,0), seasonal=c(0,1,1), include.mean = FALSE) %>
   forecast(h=60) %>% 
   autoplot()
 
-
-
 fit_ARIMA <- Arima(univariate_ts, 
                    order=c(0,1,0), seasonal=c(0,1,1),
                    include.mean = FALSE)
@@ -119,6 +117,31 @@ fit_ARIMA %>%
 
 # changing the first parameter to 1 yields a better visualisation of the residuals,
 # but it also increases the confidence margin a lot. why?
+
+# For the appendix: ARIMA models with the optimized AIC and AICc values:
+
+plot_ARIMA_optimized <- Arima(
+  univariate_ts, order=c(0,2,1), seasonal=c(0,1,1), include.mean = FALSE
+  ) %>% 
+  forecast(h=60) %>% 
+  autoplot() +
+  ggtitle("Forecasting of BEV stock in Brazil: ARIMA(0,2,1)(0,1,1) model") +
+  ylab("BEV Stock in Brazil") + xlab("Year")+
+  scale_y_continuous(labels = scales::comma)+
+  theme_bw()
+
+if (!file.exists("./4_plots/plot_ARIMA_optimized.png")) {
+  ggsave("./4_plots/plot_ARIMA_optimized.png",
+         plot   = plot_ARIMA_optimized,
+         height = 4,
+         width  = 6)
+  print("File successfully saved.")
+} else {
+  print("File already exists in the repository.")
+}
+
+
+
 
 
 ### Data frame with forecasted values ------------------------------------------

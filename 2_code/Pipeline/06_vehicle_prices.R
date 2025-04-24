@@ -349,6 +349,8 @@ if (!file.exists(  "./3_processed_data/fipe_price_monthly_trends_deflated.csv"))
 }
 
 
+
+
 # 4. Exploring the data --------------------------------------------------------
 
 ## 4.1. Histograms of price distribution ---------------------------------------
@@ -685,4 +687,74 @@ plot_trend_monthly_hybrid_prices_deflated <-
 ggsave("./4_plots/plot_trend_monthly_hybrid_prices_deflated.png",
        plot = plot_trend_monthly_hybrid_prices_deflated)
 
+# 5. Projecting the data for 2024 ----------------------------------------------
 
+df <- fipe_price_monthly_trends_deflated %>%
+  mutate(date = as.Date(date)) %>%
+  arrange(date)
+
+df <- df %>%
+  mutate(time = as.numeric(difftime(date, min(date), units = "days")))
+
+future_dates <- seq(
+  from = max(df$date) + months(1),
+  to = as.Date("2024-12-01"),
+  by = "month"
+)
+future_time <- as.numeric(difftime(future_dates, min(df$date), units = "days"))
+
+forecast_linear <- function(varname) {
+  # Fit linear model
+  lm_fit <- lm(df[[varname]] ~ time, data = df)
+  # Predict for historical and future
+  hist_pred <- predict(lm_fit, newdata = data.frame(time = df$time))
+  fut_pred <- predict(lm_fit, newdata = data.frame(time = future_time))
+  tibble(
+    date = c(df$date, future_dates),
+    value = c(hist_pred, fut_pred),
+    variable = varname
+  )
+}
+
+vars <- c(
+  "mean_price_gasoline", "mean_price_hybrid", "mean_price_electric",
+  "median_price_gasoline", "median_price_hybrid", "median_price_electric",
+  "min_price_gasoline", "min_price_hybrid", "min_price_electric",
+  "max_price_gasoline", "max_price_hybrid", "max_price_electric")
+
+forecasted_long <- bind_rows(lapply(vars, forecast_linear))
+
+ggplot(forecasted_long, aes(x = date, y = value, color = variable)) +
+  geom_line() +
+  geom_vline(xintercept = as.numeric(max(df$date)), linetype = "dashed", color = "red") +
+  labs(title = "Vehicle Price Trends with Linear Regression Forecasts",
+       subtitle = "Dashed line = start of forecast",
+       y = "Price", x = "Date") +
+  theme_minimal()
+
+forecasted_wide <- forecasted_long %>%
+  pivot_wider(names_from = variable, values_from = value) %>%
+  arrange(date)
+
+prices_2022_2024 <- forecasted_wide %>% 
+  mutate(year = substr(date, 1,4)) %>% 
+  filter(year > 2019) %>% 
+  select(date, mean_price_gasoline, mean_price_hybrid, mean_price_electric)
+
+prices_2022_2024 %>% 
+  pivot_longer(
+    cols = mean_price_gasoline:mean_price_electric,
+    names_to = "vehicle_type",
+    values_to = "value") %>% 
+  ggplot(aes(x=date,y=value, color = vehicle_type))+
+  geom_line()
+
+fipe_price_projected_2022_2024 <- prices_2022_2024
+
+if (!file.exists(  "./3_processed_data/fipe_price_projected_2022_2024.csv")) {
+  write_csv(fipe_price_projected_2022_2024,
+            file = "./3_processed_data/fipe_price_projected_2022_2024.csv")
+  print("File successfully saved.")
+} else {
+  print("File already exists in the repository.")
+}

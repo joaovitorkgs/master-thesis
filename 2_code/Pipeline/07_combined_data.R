@@ -11,10 +11,10 @@ df_fleet_brazil       <- read_csv("./3_processed_data/df_fleet_brazil.csv")
 
 # Vehicle price data
 price_df              <- read_csv("./3_processed_data/fipe_price_monthly_trends_deflated.csv")
+price_df_projected    <- read_csv("./3_processed_data/fipe_price_projected_2022_2024.csv")
 
 # Income data
 income_data_wide_uf   <- read_csv("./3_processed_data/income_data_wide_uf.csv") # State-level
-income_data_wide_br   <- read_csv("./3_processed_data/income_br_monthly_deflated.csv") # BR-level
 income_data_wide_br   <- read_csv("./3_processed_data/income_br_monthly_nominal.csv") # BR-level
 
 # Population data
@@ -75,6 +75,12 @@ df_fleet_brazil_pop  <- df_fleet_brazil %>%
 df_fleet_brazil_pop_income  <- df_fleet_brazil_pop %>% 
   left_join(income_data_wide_br, by = "date")
 
+## Adding prices data frame
+
+df_fleet_brazil_pop_income_prices <- df_fleet_brazil_pop_income %>% 
+  left_join(price_df_projected, by = "date")
+
+
 
 
 ## Data for the univariate time series -----------------------------------------
@@ -92,7 +98,7 @@ univariate_ts <- df_fleet_brazil %>%
 
 ## Data for the multivariate time series -----------------------------------------
 
-multivariate_ts <- df_fleet_brazil_pop_income %>% 
+multivariate_ts <- df_fleet_brazil_pop_income_prices %>% 
   arrange(date) %>% 
   ts(start = c(start_year, start_month), frequency = 12)
 

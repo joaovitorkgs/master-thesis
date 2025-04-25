@@ -1,0 +1,9 @@
+variable_set;p;chi_squared;df;p_value
+all_variables;1;1535.792436;1296;0.000
+all_variables;2;1449.056394;1152;0.000
+all_variables;3;1638.402197;1008;0.000
+income_excluded;1;623.9473764;576;0.082
+income_excluded;2;549.3620359;512;0.123
+income_excluded;3;566.8162821;448;0.000
+income_excluded;4;598.7402495;384;0.000
+income_excluded;5;711.4913749;320;0.000

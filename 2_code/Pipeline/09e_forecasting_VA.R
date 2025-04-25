@@ -8,11 +8,12 @@ source("./2_code/Pipeline/07_combined_data.R")
 
 all_variables <- multivariate_ts[, c(4:15)]
 
-income_excluded <- multivariate_ts[,4:10]
+income_excluded <- multivariate_ts[,4:11]
 
 VARselect(all_variables)
 
 VARselect(all_variables, lag.max=8, type="const")[["selection"]]
+VARselect(income_excluded, lag.max=8, type="const")[["selection"]]
 
 fit_VA_all_1 <- VAR(all_variables, p=1, type="const")
 serial.test(fit_VA_all_1, lags.pt=10, type="PT.asymptotic")
@@ -27,7 +28,7 @@ serial.test(fit_VA_all_3, lags.pt=10, type="PT.asymptotic")
 fcast_VA_all <- forecast(fit_VA_all_3, h = 60)
 
 # Removing income from the model
-fit_VA <- VAR(income_excluded, p=4, type="const")
+fit_VA <- VAR(income_excluded, p=2, type="const")
 serial.test(fit_VA, lags.pt=10, type="PT.asymptotic")
 
 # Selecting best model and applying forecast function
@@ -92,7 +93,75 @@ diagnostics_VA_all <- fcast_VA_all_BEV %>%
 
 # Diagnostic plots without income
 diagnostics_VA_selected <- fcast_VA_selected_BEV %>%
-  residuals() %>% ggtsdisplay(plot.type = "histogram") 
+  residuals() %>% ggtsdisplay(plot.type = "histogram")
+
+
+serial_test_summary <- function(ts_list, lags = 1:5, lags_pt = 10, type = "const") {
+  # ts_list: a named list of multivariate time series data.frames/matrices
+  # lags: vector of VAR lag orders to test
+  # lags_pt: lag parameter for serial.test
+  # type: type argument for VAR
+  
+  results <- list()
+  
+  for (set_name in names(ts_list)) {
+    ts_data <- ts_list[[set_name]]
+    for (p_val in lags) {
+      fit <- tryCatch(
+        VAR(ts_data, p = p_val, type = type),
+        error = function(e) NULL
+      )
+      if (!is.null(fit)) {
+        stest <- tryCatch(
+          serial.test(fit, lags.pt = lags_pt, type = "PT.asymptotic"),
+          error = function(e) NULL
+        )
+        if (!is.null(stest)) {
+          stat <- stest$serial$statistic
+          df <- stest$serial$parameter
+          pval <- stest$serial$p.value
+          results[[length(results) + 1]] <- tibble(
+            variable_set = set_name,
+            p = p_val,
+            chi_squared = stat,
+            df = df,
+            p_value = pval
+          )
+        }
+      }
+    }
+  }
+  
+  bind_rows(results)
+}
+
+# Example usage:
+all_variables <- multivariate_ts[, c(4:15)]
+income_excluded <- multivariate_ts[, 4:11]
+
+# Put your variable sets in a named list
+ts_sets <- list(
+  all_variables = all_variables,
+  income_excluded = income_excluded
+)
+
+# Run the function for p = 1:5
+serial_results <- serial_test_summary(ts_sets, lags = 1:5, lags_pt = 10)
+
+options(scipen = 999)
+print(serial_results)
+
+if (!file.exists("./6_tables/VAR_model_serial_results.csv")) {
+  write.csv(serial_results,
+            row.names = FALSE,
+                 "./6_tables/VAR_model_serial_results.csv"
+           )
+  print("File successfully saved.")
+} else {
+  print("File already exists in the repository.")
+}
+
+
 
 
 ### Observed vs. Fitted Plot ---------------------------------------------------

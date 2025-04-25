@@ -611,20 +611,20 @@ if (!file.exists(        "./6_tables/table_fcast_comparison.html")) {
 
 ## All projections -------------------------------------------------------------
 
-### One single plot, one panel -------------------------------------------------
+### One plot to rule them all --------------------------------------------------
 
 # Create the combined visualization
 combined_forecast_plot <- ggplot() +
-  # AAtual data line 
+  # Actual data line 
   geom_line(data = fcast_TS_df, aes(x = date, y = actual), 
             color = "black", size = 1) +
   
   # TS model forecast
   geom_line(data = subset(fcast_TS_df, is.na(actual)), 
-            aes(x = date, y = TS_mean, color = "TS"), 
+            aes(x = date, y = TS_mean, color = "Linear"), 
             size = 0.8, linetype = "dashed") +
   geom_ribbon(data = subset(fcast_TS_df, is.na(actual)),
-              aes(x = date, ymin = TS_lower_80, ymax = TS_upper_80, fill = "TS"), 
+              aes(x = date, ymin = TS_lower_80, ymax = TS_upper_80, fill = "Linear"), 
               alpha = 0.2) +
   
   # ETS model forecast
@@ -653,25 +653,25 @@ combined_forecast_plot <- ggplot() +
   
   # VA model forecast
   geom_line(data = subset(fcast_VA_df, is.na(actual)), 
-            aes(x = date, y = VA_mean, color = "VA"), 
+            aes(x = date, y = VA_mean, color = "VAR"), 
             size = 0.8, linetype = "dashed") +
   geom_ribbon(data = subset(fcast_VA_df, is.na(actual)),
-              aes(x = date, ymin = VA_lower_95, ymax = VA_upper_95, fill = "VA"), 
+              aes(x = date, ymin = VA_lower_95, ymax = VA_upper_95, fill = "VAR"), 
               alpha = 0.2) +
   
   scale_color_manual(name = "Model", 
-                     values = c("TS" = "red", 
+                     values = c("Linear" = "red", 
                                 "ETS" = "orange3", 
                                 "ARIMA" = "blue", 
                                 "Prophet" = "green4", 
-                                "VA" = "purple4")) +
+                                "VAR" = "purple4")) +
   
   scale_fill_manual(name = "Model", 
-                    values = c("TS" = "red", 
+                    values = c("Linear" = "red", 
                                "ETS" = "orange3", 
                                "ARIMA" = "blue", 
                                "Prophet" = "green3", 
-                               "VA" = "purple4")) +
+                               "VAR" = "purple4")) +
   
   labs(title = "Comparison of Forecast Models",
        x = "Year",
@@ -707,7 +707,7 @@ all_forecasts <- list()
 ts_data <- fcast_TS_df %>%
   select(date, actual, TS_mean, TS_lower_95, TS_upper_95) %>%
   rename(mean = TS_mean, lower_95 = TS_lower_95, upper_95 = TS_upper_95) %>%
-  mutate(model = "TS")
+  mutate(model = "Linear")
 all_forecasts[[1]] <- ts_data
 
 # Prepare ETS data

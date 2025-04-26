@@ -782,3 +782,6 @@ if (!file.exists("./4_plots/faceted_forecast_plot.png")) {
   print("File already exists in the repository.")
 }
 
+
+532717/100000000*100
+
